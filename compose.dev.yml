@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:alpine
+    container_name: zpassfit-postgres-dev
+    environment:
+      POSTGRES_DB: zpassfit
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - zpass-postgres_data_dev:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zpassfit-dev-network
+
+volumes:
+  zpass-postgres_data_dev:
+
+networks:
+  zpassfit-dev-network:
+    driver: bridge

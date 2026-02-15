@@ -1,0 +1,7 @@
+﻿services:
+  zpassfit:
+    image: zpassfit
+    build:
+      context: .
+      dockerfile: Dockerfile
+
