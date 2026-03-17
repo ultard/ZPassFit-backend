@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace ZPassFit.Models;
+namespace ZPassFit.Data.Models;
 
 public class ApplicationUser : IdentityUser
 {
