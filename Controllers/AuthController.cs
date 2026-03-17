@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-
+using ZPassFit.Data.Models;
 using ZPassFit.Dto;
-using ZPassFit.Models;
 
 namespace ZPassFit.Controllers;
 
@@ -13,8 +12,7 @@ namespace ZPassFit.Controllers;
 public class AuthController(
     SignInManager<ApplicationUser> signInManager,
     UserManager<ApplicationUser> userManager
-    )
-    : ControllerBase
+    ) : ControllerBase
 {
     [HttpPost("/register")]
     [EndpointSummary("Регистрация")]
