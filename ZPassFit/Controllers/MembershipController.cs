@@ -15,7 +15,7 @@ namespace ZPassFit.Controllers;
 public class MembershipController(
     IMembershipService membershipService,
     UserManager<ApplicationUser> userManager
-    ) : ControllerBase
+) : ControllerBase
 {
     [AllowAnonymous]
     [HttpGet("membership/plans")]
@@ -47,7 +47,8 @@ public class MembershipController(
     [HttpPost("membership/buy")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Купить абонемент")]
-    [EndpointDescription("Покупает/активирует абонемент по выбранному тарифу и длительности. Создаёт запись об оплате.")]
+    [EndpointDescription(
+        "Покупает/активирует абонемент по выбранному тарифу и длительности. Создаёт запись об оплате.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MembershipResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -82,4 +83,3 @@ public class MembershipController(
         return Results.Ok(payments);
     }
 }
-

@@ -12,7 +12,7 @@ public class AttendanceService(
     IMembershipRepository membershipRepository,
     IQrSessionRepository qrSessionRepository,
     IVisitLogRepository visitLogRepository
-    ) : IAttendanceService
+) : IAttendanceService
 {
     public async Task<QrSessionResponse> CreateQrSessionAsync(string userId, TimeSpan? ttl = null)
     {
@@ -93,6 +93,8 @@ public class AttendanceService(
         return MapVisit(open);
     }
 
-    private static VisitLogResponse MapVisit(VisitLog v) =>
-        new(v.Id, v.EnterDate, v.LeaveDate, v.MembershipId, v.ClientId);
+    private static VisitLogResponse MapVisit(VisitLog v)
+    {
+        return new VisitLogResponse(v.Id, v.EnterDate, v.LeaveDate, v.MembershipId, v.ClientId);
+    }
 }

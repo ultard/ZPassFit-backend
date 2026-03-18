@@ -10,4 +10,3 @@ public interface IMembershipPlanRepository
     Task UpdateAsync(MembershipPlan plan);
     Task DeleteAsync(int id);
 }
-

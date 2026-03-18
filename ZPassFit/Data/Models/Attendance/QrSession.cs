@@ -5,10 +5,8 @@ namespace ZPassFit.Data.Models.Attendance;
 
 public class QrSession
 {
-    [Key]
-    [MaxLength(255)]
-    public required string Token { get; set; }
-    
+    [Key] [MaxLength(255)] public required string Token { get; set; }
+
     public DateTime CreateDate { get; set; }
     public DateTime ExpireDate { get; set; }
 

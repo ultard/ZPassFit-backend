@@ -12,7 +12,8 @@ namespace ZPassFit.Test;
 
 public class AttendanceServiceTests
 {
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task CreateQrSession_MissingClient_Throws(
         [Frozen] IClientRepository clientRepo,
         AttendanceService attendanceService
@@ -22,12 +23,14 @@ public class AttendanceServiceTests
         var clientRepositoryMock = Mock.Get(clientRepo);
         clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync((Client?)null);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CreateQrSessionAsync(userId));
+        var exception =
+            await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CreateQrSessionAsync(userId));
         Assert.Equal("Client profile not found.", exception.Message);
         clientRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task CreateQrSession_CreatesWithDefaultTtl(
         [Frozen] IClientRepository clientRepo,
         [Frozen] IQrSessionRepository qrRepo,
@@ -78,7 +81,8 @@ public class AttendanceServiceTests
         qrSessionRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task CheckIn_MissingSession_Throws(
         [Frozen] IQrSessionRepository qrRepo,
         AttendanceService attendanceService
@@ -88,12 +92,14 @@ public class AttendanceServiceTests
         var qrSessionRepositoryMock = Mock.Get(qrRepo);
         qrSessionRepositoryMock.Setup(r => r.GetByTokenAsync(token)).ReturnsAsync((QrSession?)null);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CheckInByTokenAsync(token));
+        var exception =
+            await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CheckInByTokenAsync(token));
         Assert.Equal("QR session not found.", exception.Message);
         qrSessionRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task CheckIn_ExpiredSession_Throws(
         [Frozen] IQrSessionRepository qrRepo,
         AttendanceService attendanceService
@@ -112,12 +118,14 @@ public class AttendanceServiceTests
 
         qrSessionRepositoryMock.Setup(r => r.GetByTokenAsync(token)).ReturnsAsync(expiredSession);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CheckInByTokenAsync(token));
+        var exception =
+            await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CheckInByTokenAsync(token));
         Assert.Equal("QR session expired.", exception.Message);
         qrSessionRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task CheckIn_OpenVisit_ReturnsExisting(
         [Frozen] IQrSessionRepository qrRepo,
         [Frozen] IVisitLogRepository visitRepo,
@@ -160,7 +168,8 @@ public class AttendanceServiceTests
         qrSessionRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task CheckIn_NoOpenVisit_CreatesVisitAndDeletesToken(
         [Frozen] IQrSessionRepository qrRepo,
         [Frozen] IVisitLogRepository visitRepo,
@@ -211,7 +220,8 @@ public class AttendanceServiceTests
         Assert.NotNull(createdVisitLog);
         Assert.Equal(clientId, createdVisitLog!.ClientId);
         Assert.Equal(77, createdVisitLog.MembershipId);
-        Assert.True(createdVisitLog.EnterDate >= before.AddSeconds(-5) && createdVisitLog.EnterDate <= after.AddSeconds(5));
+        Assert.True(createdVisitLog.EnterDate >= before.AddSeconds(-5) &&
+                    createdVisitLog.EnterDate <= after.AddSeconds(5));
         Assert.Null(createdVisitLog.LeaveDate);
 
         Assert.Equal(clientId, result.ClientId);
@@ -223,7 +233,8 @@ public class AttendanceServiceTests
         qrSessionRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task CheckOut_MissingOpenVisit_Throws(
         [Frozen] IClientRepository clientRepo,
         [Frozen] IVisitLogRepository visitRepo,
@@ -251,14 +262,16 @@ public class AttendanceServiceTests
 
         visitLogRepositoryMock.Setup(r => r.GetOpenVisitByClientIdAsync(client.Id)).ReturnsAsync((VisitLog?)null);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CheckOutAsync(userId));
+        var exception =
+            await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CheckOutAsync(userId));
         Assert.Equal("Open visit not found.", exception.Message);
 
         clientRepositoryMock.VerifyAll();
         visitLogRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task CheckOut_SetsLeaveDate_Updates(
         [Frozen] IClientRepository clientRepo,
         [Frozen] IVisitLogRepository visitRepo,
@@ -309,4 +322,3 @@ public class AttendanceServiceTests
         visitLogRepositoryMock.VerifyAll();
     }
 }
-

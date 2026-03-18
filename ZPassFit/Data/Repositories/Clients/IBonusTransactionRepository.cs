@@ -10,4 +10,3 @@ public interface IBonusTransactionRepository
     Task UpdateAsync(BonusTransaction transaction);
     Task DeleteAsync(int id);
 }
-

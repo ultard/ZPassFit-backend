@@ -6,10 +6,9 @@ public class MembershipPlan
 {
     public int Id { get; set; }
 
-    [MaxLength(32)]
-    public required string Name { get; set; }
-    [MaxLength(128)]
-    public required string Description { get; set; }
+    [MaxLength(32)] public required string Name { get; set; }
+
+    [MaxLength(128)] public required string Description { get; set; }
 
     public int[] Durations { get; set; } = [];
     public int Price { get; set; }

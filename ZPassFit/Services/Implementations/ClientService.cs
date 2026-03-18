@@ -55,8 +55,9 @@ public class ClientService(IClientRepository clientRepository) : IClientService
         return client == null ? null : Map(client);
     }
 
-    private static ClientResponse Map(Client c) =>
-        new(
+    private static ClientResponse Map(Client c)
+    {
+        return new ClientResponse(
             c.Id,
             c.LastName,
             c.FirstName,
@@ -70,4 +71,5 @@ public class ClientService(IClientRepository clientRepository) : IClientService
             c.Bonuses,
             c.Notes
         );
+    }
 }

@@ -9,7 +9,8 @@ namespace ZPassFit.Test;
 
 public class ClientServiceTests
 {
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task GetMe_Missing_ReturnsNull(
         [Frozen] IClientRepository clientRepository,
         ClientService clientService
@@ -24,7 +25,8 @@ public class ClientServiceTests
         clientRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task UpsertMe_Missing_AddsAndMaps(
         [Frozen] IClientRepository clientRepository,
         ClientService clientService
@@ -42,18 +44,18 @@ public class ClientServiceTests
             .Returns(Task.CompletedTask);
 
         var request = new UpsertClientMeRequest(
-            LastName: "Ivanov",
-            FirstName: "Ivan",
-            MiddleName: "Ivanovich",
-            BirthDate: new DateTime(2000, 1, 2),
-            Gender: ClientGender.Male,
-            Phone: "+70000000000",
-            Email: "ivan@example.com",
-            Notes: "note"
+            "Ivanov",
+            "Ivan",
+            "Ivanovich",
+            new DateTime(2000, 1, 2),
+            ClientGender.Male,
+            "+70000000000",
+            "ivan@example.com",
+            "note"
         );
 
         var before = DateTime.UtcNow;
-        
+
         // Act
         var result = await clientService.UpsertMeAsync(userId, request);
         var after = DateTime.UtcNow;
@@ -83,7 +85,8 @@ public class ClientServiceTests
         clientRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task UpsertMe_Existing_UpdatesAndMaps(
         [Frozen] IClientRepository clientRepository,
         ClientService clientService
@@ -109,14 +112,14 @@ public class ClientServiceTests
         clientRepositoryMock.Setup(r => r.UpdateAsync(existingClient)).Returns(Task.CompletedTask);
 
         var request = new UpsertClientMeRequest(
-            LastName: "Ivanov",
-            FirstName: "Ivan",
-            MiddleName: "Ivanovich",
-            BirthDate: new DateTime(2000, 1, 2),
-            Gender: ClientGender.Male,
-            Phone: "+70000000000",
-            Email: "ivan@example.com",
-            Notes: "note"
+            "Ivanov",
+            "Ivan",
+            "Ivanovich",
+            new DateTime(2000, 1, 2),
+            ClientGender.Male,
+            "+70000000000",
+            "ivan@example.com",
+            "note"
         );
 
         var result = await clientService.UpsertMeAsync(userId, request);
@@ -134,7 +137,8 @@ public class ClientServiceTests
         clientRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task GetById_Missing_ReturnsNull(
         [Frozen] IClientRepository clientRepository,
         ClientService clientService
@@ -150,4 +154,3 @@ public class ClientServiceTests
         clientRepositoryMock.VerifyAll();
     }
 }
-

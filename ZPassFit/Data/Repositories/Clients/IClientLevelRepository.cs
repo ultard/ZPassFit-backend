@@ -10,4 +10,3 @@ public interface IClientLevelRepository
     Task UpdateAsync(ClientLevel clientLevel);
     Task DeleteAsync(int id);
 }
-

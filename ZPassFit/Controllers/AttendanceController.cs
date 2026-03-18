@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using ZPassFit.Auth;
 using ZPassFit.Data.Models;
 using ZPassFit.Dto;
-using ZPassFit.Services;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Controllers;
@@ -16,7 +15,7 @@ namespace ZPassFit.Controllers;
 public class AttendanceController(
     UserManager<ApplicationUser> userManager,
     IAttendanceService attendanceService
-    ) : ControllerBase
+) : ControllerBase
 {
     [HttpGet("visits")]
     [Authorize(Roles = Roles.Client)]
@@ -54,7 +53,8 @@ public class AttendanceController(
     [HttpPost("qr_session")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Создать QR-сессию")]
-    [EndpointDescription("Создаёт краткоживущую QR-сессию для входа клиента в клуб. Возвращает токен и время истечения.")]
+    [EndpointDescription(
+        "Создаёт краткоживущую QR-сессию для входа клиента в клуб. Возвращает токен и время истечения.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QrSessionResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -77,7 +77,8 @@ public class AttendanceController(
     [HttpPost("checkin/{token}")]
     [Authorize(Roles = Roles.AdminOrEmployee)]
     [EndpointSummary("Вход по QR")]
-    [EndpointDescription("Открывает посещение по QR-токену (обычно сканируется на ресепшене). При успехе удаляет QR-сессию.")]
+    [EndpointDescription(
+        "Открывает посещение по QR-токену (обычно сканируется на ресепшене). При успехе удаляет QR-сессию.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(VisitLogResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CheckIn([FromRoute] string token)

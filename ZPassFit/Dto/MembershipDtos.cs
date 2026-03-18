@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using ZPassFit.Data.Models.Memberships;
 
 namespace ZPassFit.Dto;
@@ -33,4 +32,3 @@ public record PaymentResponse(
     DateTime CreateDate,
     DateTime? PaymentDate
 );
-

@@ -41,4 +41,3 @@ public class MembershipRepository(ApplicationDbContext context) : IMembershipRep
         await context.SaveChangesAsync();
     }
 }
-

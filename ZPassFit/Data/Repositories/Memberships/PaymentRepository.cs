@@ -42,4 +42,3 @@ public class PaymentRepository(ApplicationDbContext context) : IPaymentRepositor
         await context.SaveChangesAsync();
     }
 }
-

@@ -11,7 +11,8 @@ namespace ZPassFit.Test;
 
 public class MembershipServiceTests
 {
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task GetPlans_Maps(
         [Frozen] IMembershipPlanRepository planRepo,
         MembershipService membershipService
@@ -21,7 +22,7 @@ public class MembershipServiceTests
         membershipPlanRepositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync([
             new MembershipPlan
             {
-                Id = 1, 
+                Id = 1,
                 Name = "Base",
                 Description = "Standard access",
                 Durations = [30, 90],
@@ -40,7 +41,8 @@ public class MembershipServiceTests
         membershipPlanRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task GetMyMembership_MissingClient_ReturnsNull(
         [Frozen] IClientRepository clientRepo,
         MembershipService membershipService
@@ -56,7 +58,8 @@ public class MembershipServiceTests
         clientRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task BuyMembership_MissingClient_Throws(
         [Frozen] IClientRepository clientRepo,
         MembershipService membershipService
@@ -67,13 +70,14 @@ public class MembershipServiceTests
         clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync((Client?)null);
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(PlanId: 1, DurationDays: 30, Method: PaymentMethod.Cash)));
+            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(1, 30, PaymentMethod.Cash)));
 
         Assert.Equal("Client profile not found.", exception.Message);
         clientRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task BuyMembership_MissingPlan_Throws(
         [Frozen] IClientRepository clientRepo,
         [Frozen] IMembershipPlanRepository planRepo,
@@ -102,14 +106,15 @@ public class MembershipServiceTests
         membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((MembershipPlan?)null);
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(PlanId: 1, DurationDays: 30, Method: PaymentMethod.Card)));
+            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(1, 30, PaymentMethod.Card)));
 
         Assert.Equal("Membership plan not found.", exception.Message);
         clientRepositoryMock.VerifyAll();
         membershipPlanRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task BuyMembership_BadDuration_Throws(
         [Frozen] IClientRepository clientRepo,
         [Frozen] IMembershipPlanRepository planRepo,
@@ -141,14 +146,15 @@ public class MembershipServiceTests
         });
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(PlanId: 1, DurationDays: 365, Method: PaymentMethod.Card)));
+            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(1, 365, PaymentMethod.Card)));
 
         Assert.Equal("Selected duration is not allowed for this plan.", exception.Message);
         clientRepositoryMock.VerifyAll();
         membershipPlanRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task BuyMembership_New_CreatesMembershipAndPayment(
         [Frozen] IClientRepository clientRepo,
         [Frozen] IMembershipPlanRepository planRepo,
@@ -176,7 +182,8 @@ public class MembershipServiceTests
             Email = "ivan@example.com"
         };
 
-        var membershipPlan = new MembershipPlan { Id = 7, Name = "Base", Description = "Standard access", Durations = [30], Price = 1500 };
+        var membershipPlan = new MembershipPlan
+            { Id = 7, Name = "Base", Description = "Standard access", Durations = [30], Price = 1500 };
 
         clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
 
@@ -195,14 +202,16 @@ public class MembershipServiceTests
             .Returns(Task.CompletedTask);
 
         var before = DateTime.UtcNow;
-        var result = await membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(PlanId: 7, DurationDays: 30, Method: PaymentMethod.Cash));
+        var result =
+            await membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(7, 30, PaymentMethod.Cash));
         var after = DateTime.UtcNow;
 
         Assert.NotNull(addedMembership);
         Assert.Equal(client.Id, addedMembership!.ClientId);
         Assert.Equal(membershipPlan.Id, addedMembership.PlanId);
         Assert.Equal(MembershipStatus.Active, addedMembership.Status);
-        Assert.True(addedMembership.ActivatedDate >= before.AddSeconds(-5) && addedMembership.ActivatedDate <= after.AddSeconds(5));
+        Assert.True(addedMembership.ActivatedDate >= before.AddSeconds(-5) &&
+                    addedMembership.ActivatedDate <= after.AddSeconds(5));
         Assert.Equal(addedMembership.ActivatedDate.AddDays(30).Date, addedMembership.ExpireDate.Date);
 
         Assert.NotNull(addedPayment);
@@ -212,7 +221,8 @@ public class MembershipServiceTests
         Assert.Equal(client.Id, addedPayment.ClientId);
         Assert.Null(addedPayment.EmployeeId);
         Assert.NotNull(addedPayment.PaymentDate);
-        Assert.True(addedPayment.PaymentDate >= before.AddSeconds(-5) && addedPayment.PaymentDate <= after.AddSeconds(5));
+        Assert.True(
+            addedPayment.PaymentDate >= before.AddSeconds(-5) && addedPayment.PaymentDate <= after.AddSeconds(5));
 
         Assert.Equal(addedMembership.PlanId, result.PlanId);
         Assert.Equal(addedMembership.Status, result.Status);
@@ -223,7 +233,8 @@ public class MembershipServiceTests
         paymentRepositoryMock.VerifyAll();
     }
 
-    [Theory, AutoMoqData]
+    [Theory]
+    [AutoMoqData]
     public async Task BuyMembership_Existing_UpdatesMembershipAndAddsPayment(
         [Frozen] IClientRepository clientRepo,
         [Frozen] IMembershipPlanRepository planRepo,
@@ -251,7 +262,8 @@ public class MembershipServiceTests
             Email = "ivan@example.com"
         };
 
-        var membershipPlan = new MembershipPlan { Id = 9, Name = "Pro", Description = "Unlimited access", Durations = [], Price = 2500 };
+        var membershipPlan = new MembershipPlan
+            { Id = 9, Name = "Pro", Description = "Unlimited access", Durations = [], Price = 2500 };
         var existingMembership = new Membership
         {
             Id = 123,
@@ -270,7 +282,8 @@ public class MembershipServiceTests
         membershipRepositoryMock.Setup(r => r.UpdateAsync(existingMembership)).Returns(Task.CompletedTask);
 
         paymentRepositoryMock.Setup(r => r.AddAsync(It.IsAny<Payment>())).Returns(Task.CompletedTask);
-        var result = await membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(PlanId: 9, DurationDays: 45, Method: PaymentMethod.Card));
+        var result =
+            await membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(9, 45, PaymentMethod.Card));
 
         Assert.Equal(123, result.Id);
         Assert.Equal(9, result.PlanId);
@@ -282,4 +295,3 @@ public class MembershipServiceTests
         paymentRepositoryMock.VerifyAll();
     }
 }
-

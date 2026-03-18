@@ -11,7 +11,7 @@ public class MembershipService(
     IMembershipPlanRepository planRepository,
     IMembershipRepository membershipRepository,
     IPaymentRepository paymentRepository
-    ) : IMembershipService
+) : IMembershipService
 {
     public async Task<IEnumerable<MembershipPlanResponse>> GetPlansAsync()
     {
@@ -83,9 +83,12 @@ public class MembershipService(
         if (client == null) return [];
 
         var payments = await paymentRepository.GetByClientIdAsync(client.Id);
-        return payments.Select(p => new PaymentResponse(p.Id, p.Amount, p.Method, p.Status, p.CreateDate, p.PaymentDate));
+        return payments.Select(p =>
+            new PaymentResponse(p.Id, p.Amount, p.Method, p.Status, p.CreateDate, p.PaymentDate));
     }
 
-    private static MembershipResponse MapMembership(Membership m) =>
-        new(m.Id, m.PlanId, m.Status, m.ActivatedDate, m.ExpireDate);
+    private static MembershipResponse MapMembership(Membership m)
+    {
+        return new MembershipResponse(m.Id, m.PlanId, m.Status, m.ActivatedDate, m.ExpireDate);
+    }
 }

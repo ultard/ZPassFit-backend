@@ -33,4 +33,3 @@ public class EmployeeRepository(ApplicationDbContext context) : IEmployeeReposit
         await context.SaveChangesAsync();
     }
 }
-

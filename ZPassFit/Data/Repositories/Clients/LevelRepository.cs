@@ -33,4 +33,3 @@ public class LevelRepository(ApplicationDbContext context) : ILevelRepository
         await context.SaveChangesAsync();
     }
 }
-

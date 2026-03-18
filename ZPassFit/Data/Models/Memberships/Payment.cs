@@ -1,5 +1,4 @@
 using ZPassFit.Data.Models.Clients;
-using ZPassFit.Data.Models;
 
 namespace ZPassFit.Data.Models.Memberships;
 
@@ -22,10 +21,10 @@ public class Payment
     public int Amount { get; set; }
     public PaymentMethod Method { get; set; }
     public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
-    
+
     public DateTime? PaymentDate { get; set; }
     public DateTime CreateDate { get; set; } = DateTime.UtcNow;
-    
+
     public Guid ClientId { get; set; }
     public int? EmployeeId { get; set; }
 

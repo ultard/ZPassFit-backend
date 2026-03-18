@@ -41,4 +41,3 @@ public class ClientLevelRepository(ApplicationDbContext context) : IClientLevelR
         await context.SaveChangesAsync();
     }
 }
-

@@ -10,4 +10,3 @@ public interface IPaymentRepository
     Task UpdateAsync(Payment payment);
     Task DeleteAsync(int id);
 }
-

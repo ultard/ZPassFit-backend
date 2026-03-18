@@ -12,7 +12,7 @@ namespace ZPassFit.Controllers;
 public class AuthController(
     SignInManager<ApplicationUser> signInManager,
     UserManager<ApplicationUser> userManager
-    ) : ControllerBase
+) : ControllerBase
 {
     [HttpPost("register")]
     [EndpointSummary("Регистрация")]
@@ -29,12 +29,9 @@ public class AuthController(
 
         var result = await userManager.CreateAsync(user, request.Password);
 
-        if (!result.Succeeded)
-        {
-            return Results.BadRequest(result.Errors);
-        }
+        if (!result.Succeeded) return Results.BadRequest(result.Errors);
 
-        await signInManager.SignInAsync(user, isPersistent: true);
+        await signInManager.SignInAsync(user, true);
         return Results.Created();
     }
 
@@ -49,12 +46,12 @@ public class AuthController(
         if (user == null)
             return Results.Unauthorized();
 
-        var result = await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
+        var result = await signInManager.CheckPasswordSignInAsync(user, request.Password, true);
 
         if (!result.Succeeded)
             return Results.Unauthorized();
 
-        await signInManager.SignInAsync(user, isPersistent: true);
+        await signInManager.SignInAsync(user, true);
         return Results.Accepted();
     }
 

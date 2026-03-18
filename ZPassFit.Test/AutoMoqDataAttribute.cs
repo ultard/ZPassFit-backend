@@ -1,5 +1,6 @@
 using AutoFixture;
 using AutoFixture.AutoMoq;
+using AutoFixture.Kernel;
 using AutoFixture.Xunit3;
 using Moq;
 
@@ -21,14 +22,12 @@ public sealed class AutoMoqDataAttribute() : AutoDataAttribute(CreateFixture)
         return fixture;
     }
 
-    private sealed class StrictMockBuilder : AutoFixture.Kernel.ISpecimenBuilder
+    private sealed class StrictMockBuilder : ISpecimenBuilder
     {
-        public object Create(object request, AutoFixture.Kernel.ISpecimenContext context)
+        public object Create(object request, ISpecimenContext context)
         {
             if (request is not Type { IsGenericType: true } t || t.GetGenericTypeDefinition() != typeof(Mock<>))
-            {
-                return new AutoFixture.Kernel.NoSpecimen();
-            }
+                return new NoSpecimen();
 
             var mockedType = t.GetGenericArguments()[0];
             var mockType = typeof(Mock<>).MakeGenericType(mockedType);
@@ -36,4 +35,3 @@ public sealed class AutoMoqDataAttribute() : AutoDataAttribute(CreateFixture)
         }
     }
 }
-

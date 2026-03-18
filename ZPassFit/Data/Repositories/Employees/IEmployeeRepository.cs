@@ -9,4 +9,3 @@ public interface IEmployeeRepository
     Task UpdateAsync(Employee employee);
     Task DeleteAsync(int id);
 }
-

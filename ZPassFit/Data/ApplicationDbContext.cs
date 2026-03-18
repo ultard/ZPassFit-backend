@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-
 using ZPassFit.Data.Models;
 using ZPassFit.Data.Models.Attendance;
 using ZPassFit.Data.Models.Clients;

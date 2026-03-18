@@ -9,4 +9,3 @@ public record VisitLogResponse(
     int MembershipId,
     Guid ClientId
 );
-

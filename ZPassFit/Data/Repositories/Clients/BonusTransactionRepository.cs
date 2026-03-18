@@ -41,4 +41,3 @@ public class BonusTransactionRepository(ApplicationDbContext context) : IBonusTr
         await context.SaveChangesAsync();
     }
 }
-

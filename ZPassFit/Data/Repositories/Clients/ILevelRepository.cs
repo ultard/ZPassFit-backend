@@ -9,4 +9,3 @@ public interface ILevelRepository
     Task UpdateAsync(Level level);
     Task DeleteAsync(int id);
 }
-

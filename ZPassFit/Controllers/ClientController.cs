@@ -15,7 +15,7 @@ namespace ZPassFit.Controllers;
 public class ClientController(
     IClientService clientService,
     UserManager<ApplicationUser> userManager
-    ) : ControllerBase
+) : ControllerBase
 {
     [HttpGet("me")]
     [Authorize(Roles = Roles.Client)]

@@ -38,4 +38,3 @@ public class MembershipPlanRepository(ApplicationDbContext context) : IMembershi
         await context.SaveChangesAsync();
     }
 }
-
