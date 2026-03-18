@@ -3,5 +3,5 @@
     image: zpassfit
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ZPassFit/Dockerfile
 

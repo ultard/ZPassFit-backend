@@ -7,10 +7,10 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["ZPassFit.csproj", "./"]
-RUN dotnet restore "ZPassFit.csproj"
+COPY ["ZPassFit/ZPassFit.csproj", "ZPassFit/"]
+RUN dotnet restore "ZPassFit/ZPassFit.csproj"
 COPY . .
-WORKDIR "/src/"
+WORKDIR "/src/ZPassFit"
 RUN dotnet build "./ZPassFit.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish

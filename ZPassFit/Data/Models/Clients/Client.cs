@@ -32,7 +32,7 @@ public class Client
     [MaxLength(15)] public required string Phone { get; set; }
     [MaxLength(255)] public required string Email { get; set; }
 
-    public DateTime RegistrationDate { get; set; } = DateTime.Now;
+    public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
     public ClientStatus Status { get; set; } = ClientStatus.Active;
     
     [Range(0, int.MaxValue)]
