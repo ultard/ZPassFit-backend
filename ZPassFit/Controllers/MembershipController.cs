@@ -18,7 +18,7 @@ public class MembershipController(
     ) : ControllerBase
 {
     [AllowAnonymous]
-    [HttpGet("/membership/plans")]
+    [HttpGet("membership/plans")]
     [EndpointSummary("Список тарифов")]
     [EndpointDescription("Возвращает список доступных тарифов абонементов.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<MembershipPlanResponse>))]
@@ -28,7 +28,7 @@ public class MembershipController(
         return Results.Ok(plans);
     }
 
-    [HttpGet("/membership/me")]
+    [HttpGet("membership/me")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Мой абонемент")]
     [EndpointDescription("Возвращает текущий абонемент авторизованного клиента.")]
@@ -44,7 +44,7 @@ public class MembershipController(
         return membership == null ? Results.NotFound() : Results.Ok(membership);
     }
 
-    [HttpPost("/membership/buy")]
+    [HttpPost("membership/buy")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Купить абонемент")]
     [EndpointDescription("Покупает/активирует абонемент по выбранному тарифу и длительности. Создаёт запись об оплате.")]
@@ -67,7 +67,7 @@ public class MembershipController(
         }
     }
 
-    [HttpGet("/payments/me")]
+    [HttpGet("payments/me")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Мои платежи")]
     [EndpointDescription("Возвращает историю платежей текущего клиента.")]

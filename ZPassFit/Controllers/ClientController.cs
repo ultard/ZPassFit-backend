@@ -17,7 +17,7 @@ public class ClientController(
     UserManager<ApplicationUser> userManager
     ) : ControllerBase
 {
-    [HttpGet("/client/me")]
+    [HttpGet("me")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Профиль клиента")]
     [EndpointDescription("Возвращает профиль клиента текущего авторизованного пользователя.")]
@@ -33,7 +33,7 @@ public class ClientController(
         return client == null ? Results.NotFound() : Results.Ok(client);
     }
 
-    [HttpPut("/client/me")]
+    [HttpPut("me")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Создать/обновить профиль клиента")]
     [EndpointDescription("Создаёт профиль клиента для текущего пользователя, либо обновляет существующий.")]
@@ -49,7 +49,7 @@ public class ClientController(
         return Results.Ok(client);
     }
 
-    [HttpGet("/clients/{id:guid}")]
+    [HttpGet("{id:guid}")]
     [Authorize(Roles = Roles.AdminOrEmployee)]
     [EndpointSummary("Клиент по ID")]
     [EndpointDescription("Возвращает информацию о клиенте по его идентификатору.")]

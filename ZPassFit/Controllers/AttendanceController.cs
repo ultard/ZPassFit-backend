@@ -18,7 +18,7 @@ public class AttendanceController(
     IAttendanceService attendanceService
     ) : ControllerBase
 {
-    [HttpGet("/visits")]
+    [HttpGet("visits")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Текущее посещение")]
     [EndpointDescription("Возвращает открытое (не завершённое) посещение текущего клиента, если оно есть.")]
@@ -36,7 +36,7 @@ public class AttendanceController(
         return Results.Ok(visit);
     }
 
-    [HttpGet("/visits/history")]
+    [HttpGet("visits/history")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("История посещений")]
     [EndpointDescription("Возвращает историю посещений текущего клиента (от новых к старым).")]
@@ -51,7 +51,7 @@ public class AttendanceController(
         return Results.Ok(visits);
     }
 
-    [HttpPost("/qr_session")]
+    [HttpPost("qr_session")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Создать QR-сессию")]
     [EndpointDescription("Создаёт краткоживущую QR-сессию для входа клиента в клуб. Возвращает токен и время истечения.")]
@@ -74,7 +74,7 @@ public class AttendanceController(
         }
     }
 
-    [HttpPost("/attendance/checkin/{token}")]
+    [HttpPost("checkin/{token}")]
     [Authorize(Roles = Roles.AdminOrEmployee)]
     [EndpointSummary("Вход по QR")]
     [EndpointDescription("Открывает посещение по QR-токену (обычно сканируется на ресепшене). При успехе удаляет QR-сессию.")]
@@ -93,7 +93,7 @@ public class AttendanceController(
         }
     }
 
-    [HttpPost("/attendance/checkout")]
+    [HttpPost("checkout")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Выход")]
     [EndpointDescription("Закрывает текущее посещение клиента, проставляя время выхода.")]

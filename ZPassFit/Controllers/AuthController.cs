@@ -14,7 +14,7 @@ public class AuthController(
     UserManager<ApplicationUser> userManager
     ) : ControllerBase
 {
-    [HttpPost("/register")]
+    [HttpPost("register")]
     [EndpointSummary("Регистрация")]
     [EndpointDescription("Создаёт нового пользователя.")]
     [ProducesResponseType(StatusCodes.Status201Created, Description = "Регистрация прошла успешно")]
@@ -38,7 +38,7 @@ public class AuthController(
         return Results.Created();
     }
 
-    [HttpPost("/login")]
+    [HttpPost("login")]
     [EndpointSummary("Вход")]
     [EndpointDescription("Входит в существующего пользователя.")]
     [ProducesResponseType(StatusCodes.Status202Accepted, Description = "Вход произошёл успешно")]
@@ -59,7 +59,7 @@ public class AuthController(
     }
 
     [Authorize]
-    [HttpPost("/logout")]
+    [HttpPost("logout")]
     [EndpointSummary("Выход")]
     [EndpointDescription("Удаляет куки и сессию текущего пользователя.")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Description = "Сессия успешно закрыта")]
