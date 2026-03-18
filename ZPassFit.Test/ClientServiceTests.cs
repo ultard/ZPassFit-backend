@@ -1,3 +1,4 @@
+using AutoFixture.Xunit3;
 using Moq;
 using ZPassFit.Data.Models.Clients;
 using ZPassFit.Data.Repositories.Clients;
@@ -6,32 +7,41 @@ using ZPassFit.Services.Implementations;
 
 namespace ZPassFit.Test;
 
-public class ClientServiceTests()
+public class ClientServiceTests
 {
     [Theory, AutoMoqData]
-    public async Task GetMeAsync_WhenClientMissing_ReturnsNull(Mock<IClientRepository> repo)
+    public async Task GetMe_Missing_ReturnsNull(
+        [Frozen] IClientRepository clientRepository,
+        ClientService clientService
+    )
     {
-        repo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync((Client?)null);
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepository);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync((Client?)null);
+        var result = await clientService.GetMeAsync(userId);
 
-        var svc = new ClientService(repo.Object);
-        var res = await svc.GetMeAsync("u1");
-
-        Assert.Null(res);
-        repo.VerifyAll();
+        Assert.Null(result);
+        clientRepositoryMock.VerifyAll();
     }
 
     [Theory, AutoMoqData]
-    public async Task UpsertMeAsync_WhenClientMissing_AddsNewClient_AndReturnsMapped(Mock<IClientRepository> repo)
+    public async Task UpsertMe_Missing_AddsAndMaps(
+        [Frozen] IClientRepository clientRepository,
+        ClientService clientService
+    )
     {
         // Arrange
-        repo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync((Client?)null);
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepository);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync((Client?)null);
 
         Client? added = null;
-        repo.Setup(r => r.AddAsync(It.IsAny<Client>()))
-            .Callback<Client>(c => added = c)
+        clientRepositoryMock
+            .Setup(r => r.AddAsync(It.IsAny<Client>()))
+            .Callback<Client>(addedClient => added = addedClient)
             .Returns(Task.CompletedTask);
 
-        var req = new UpsertClientMeRequest(
+        var request = new UpsertClientMeRequest(
             LastName: "Ivanov",
             FirstName: "Ivan",
             MiddleName: "Ivanovich",
@@ -42,59 +52,63 @@ public class ClientServiceTests()
             Notes: "note"
         );
 
-        var clientService = new ClientService(repo.Object);
         var before = DateTime.UtcNow;
         
         // Act
-        var res = await clientService.UpsertMeAsync("u1", req);
+        var result = await clientService.UpsertMeAsync(userId, request);
         var after = DateTime.UtcNow;
 
         // Assert
         Assert.NotNull(added);
-        Assert.Equal("u1", added!.UserId);
-        Assert.Equal(req.LastName, added.LastName);
-        Assert.Equal(req.FirstName, added.FirstName);
-        Assert.Equal(req.MiddleName, added.MiddleName);
-        Assert.Equal(req.BirthDate, added.BirthDate);
-        Assert.Equal(req.Gender, added.Gender);
-        Assert.Equal(req.Phone, added.Phone);
-        Assert.Equal(req.Email, added.Email);
-        Assert.Equal(req.Notes, added.Notes);
+        Assert.Equal(userId, added!.UserId);
+        Assert.Equal(request.LastName, added.LastName);
+        Assert.Equal(request.FirstName, added.FirstName);
+        Assert.Equal(request.MiddleName, added.MiddleName);
+        Assert.Equal(request.BirthDate, added.BirthDate);
+        Assert.Equal(request.Gender, added.Gender);
+        Assert.Equal(request.Phone, added.Phone);
+        Assert.Equal(request.Email, added.Email);
+        Assert.Equal(request.Notes, added.Notes);
 
-        Assert.Equal(added.Id, res.Id);
-        Assert.Equal(req.LastName, res.LastName);
-        Assert.Equal(req.FirstName, res.FirstName);
-        Assert.Equal(req.MiddleName, res.MiddleName);
-        Assert.Equal(req.BirthDate, res.BirthDate);
-        Assert.Equal(req.Gender, res.Gender);
-        Assert.Equal(req.Phone, res.Phone);
-        Assert.Equal(req.Email, res.Email);
-        Assert.True(res.RegistrationDate >= before.AddSeconds(-5) && res.RegistrationDate <= after.AddSeconds(5));
+        Assert.Equal(added.Id, result.Id);
+        Assert.Equal(request.LastName, result.LastName);
+        Assert.Equal(request.FirstName, result.FirstName);
+        Assert.Equal(request.MiddleName, result.MiddleName);
+        Assert.Equal(request.BirthDate, result.BirthDate);
+        Assert.Equal(request.Gender, result.Gender);
+        Assert.Equal(request.Phone, result.Phone);
+        Assert.Equal(request.Email, result.Email);
+        Assert.True(result.RegistrationDate >= before.AddSeconds(-5) && result.RegistrationDate <= after.AddSeconds(5));
 
-        repo.VerifyAll();
+        clientRepositoryMock.VerifyAll();
     }
 
     [Theory, AutoMoqData]
-    public async Task UpsertMeAsync_WhenClientExists_UpdatesClient_AndReturnsMapped(Mock<IClientRepository> repo)
+    public async Task UpsertMe_Existing_UpdatesAndMaps(
+        [Frozen] IClientRepository clientRepository,
+        ClientService clientService
+    )
     {
-        var existing = new Client
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepository);
+        var existingClient = new Client
         {
             Id = Guid.NewGuid(),
-            UserId = "u1",
-            LastName = "Old",
-            FirstName = "Old",
-            MiddleName = "Old",
+            UserId = userId,
+            LastName = "Petrov",
+            FirstName = "Petr",
+            MiddleName = "Petrovich",
             BirthDate = new DateTime(1990, 1, 1),
             Gender = ClientGender.Unknown,
-            Phone = "0",
-            Email = "old@example.com",
+            Phone = "+79990000000",
+            Email = "petrov.old@example.com",
             Notes = null
         };
 
-        repo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync(existing);
-        repo.Setup(r => r.UpdateAsync(existing)).Returns(Task.CompletedTask);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(existingClient);
+        clientRepositoryMock.Setup(r => r.UpdateAsync(existingClient)).Returns(Task.CompletedTask);
 
-        var req = new UpsertClientMeRequest(
+        var request = new UpsertClientMeRequest(
             LastName: "Ivanov",
             FirstName: "Ivan",
             MiddleName: "Ivanovich",
@@ -105,32 +119,35 @@ public class ClientServiceTests()
             Notes: "note"
         );
 
-        var svc = new ClientService(repo.Object);
-        var res = await svc.UpsertMeAsync("u1", req);
+        var result = await clientService.UpsertMeAsync(userId, request);
 
-        Assert.Equal(existing.Id, res.Id);
-        Assert.Equal(req.LastName, existing.LastName);
-        Assert.Equal(req.FirstName, existing.FirstName);
-        Assert.Equal(req.MiddleName, existing.MiddleName);
-        Assert.Equal(req.BirthDate, existing.BirthDate);
-        Assert.Equal(req.Gender, existing.Gender);
-        Assert.Equal(req.Phone, existing.Phone);
-        Assert.Equal(req.Email, existing.Email);
-        Assert.Equal(req.Notes, existing.Notes);
+        Assert.Equal(existingClient.Id, result.Id);
+        Assert.Equal(request.LastName, existingClient.LastName);
+        Assert.Equal(request.FirstName, existingClient.FirstName);
+        Assert.Equal(request.MiddleName, existingClient.MiddleName);
+        Assert.Equal(request.BirthDate, existingClient.BirthDate);
+        Assert.Equal(request.Gender, existingClient.Gender);
+        Assert.Equal(request.Phone, existingClient.Phone);
+        Assert.Equal(request.Email, existingClient.Email);
+        Assert.Equal(request.Notes, existingClient.Notes);
 
-        repo.VerifyAll();
+        clientRepositoryMock.VerifyAll();
     }
 
     [Theory, AutoMoqData]
-    public async Task GetByIdAsync_WhenClientMissing_ReturnsNull(Mock<IClientRepository> repo)
+    public async Task GetById_Missing_ReturnsNull(
+        [Frozen] IClientRepository clientRepository,
+        ClientService clientService
+    )
     {
-        repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Client?)null);
+        var clientId = Guid.NewGuid();
+        var clientRepositoryMock = Mock.Get(clientRepository);
+        clientRepositoryMock.Setup(r => r.GetByIdAsync(clientId)).ReturnsAsync((Client?)null);
 
-        var svc = new ClientService(repo.Object);
-        var res = await svc.GetByIdAsync(Guid.NewGuid());
+        var result = await clientService.GetByIdAsync(clientId);
 
-        Assert.Null(res);
-        repo.VerifyAll();
+        Assert.Null(result);
+        clientRepositoryMock.VerifyAll();
     }
 }
 

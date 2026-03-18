@@ -1,3 +1,4 @@
+using AutoFixture.Xunit3;
 using Moq;
 using ZPassFit.Data.Models.Attendance;
 using ZPassFit.Data.Models.Clients;
@@ -11,134 +12,132 @@ namespace ZPassFit.Test;
 
 public class AttendanceServiceTests
 {
-    [Fact]
-    public async Task CreateQrSessionAsync_WhenClientMissing_Throws()
+    [Theory, AutoMoqData]
+    public async Task CreateQrSession_MissingClient_Throws(
+        [Frozen] IClientRepository clientRepo,
+        AttendanceService attendanceService
+    )
     {
-        var clientRepo = new Mock<IClientRepository>(MockBehavior.Strict);
-        clientRepo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync((Client?)null);
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepo);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync((Client?)null);
 
-        var svc = new AttendanceService(
-            clientRepository: clientRepo.Object,
-            membershipRepository: Mock.Of<IMembershipRepository>(),
-            qrSessionRepository: Mock.Of<IQrSessionRepository>(),
-            visitLogRepository: Mock.Of<IVisitLogRepository>()
-        );
-
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateQrSessionAsync("u1"));
-        Assert.Equal("Client profile not found.", ex.Message);
-        clientRepo.VerifyAll();
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CreateQrSessionAsync(userId));
+        Assert.Equal("Client profile not found.", exception.Message);
+        clientRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task CreateQrSessionAsync_CreatesSession_WithDefaultTtl()
+    [Theory, AutoMoqData]
+    public async Task CreateQrSession_CreatesWithDefaultTtl(
+        [Frozen] IClientRepository clientRepo,
+        [Frozen] IQrSessionRepository qrRepo,
+        AttendanceService attendanceService
+    )
     {
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepo);
+        var qrSessionRepositoryMock = Mock.Get(qrRepo);
+
         var client = new Client
         {
             Id = Guid.NewGuid(),
-            UserId = "u1",
-            LastName = "A",
-            FirstName = "B",
-            MiddleName = "C",
-            BirthDate = new DateTime(2000, 1, 1),
-            Gender = ClientGender.Unknown,
-            Phone = "0",
-            Email = "a@a.a"
+            UserId = userId,
+            LastName = "Ivanov",
+            FirstName = "Ivan",
+            MiddleName = "Ivanovich",
+            BirthDate = new DateTime(2000, 1, 2),
+            Gender = ClientGender.Male,
+            Phone = "+70000000000",
+            Email = "ivan@example.com"
         };
 
-        var clientRepo = new Mock<IClientRepository>(MockBehavior.Strict);
-        clientRepo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync(client);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
 
-        var qrRepo = new Mock<IQrSessionRepository>(MockBehavior.Strict);
-        QrSession? added = null;
-        qrRepo.Setup(r => r.AddAsync(It.IsAny<QrSession>()))
-            .Callback<QrSession>(s => added = s)
+        QrSession? createdSession = null;
+        qrSessionRepositoryMock.Setup(r => r.AddAsync(It.IsAny<QrSession>()))
+            .Callback<QrSession>(qrSession => createdSession = qrSession)
             .Returns(Task.CompletedTask);
 
-        var svc = new AttendanceService(
-            clientRepository: clientRepo.Object,
-            membershipRepository: Mock.Of<IMembershipRepository>(),
-            qrSessionRepository: qrRepo.Object,
-            visitLogRepository: Mock.Of<IVisitLogRepository>()
-        );
-
         var before = DateTime.UtcNow;
-        var res = await svc.CreateQrSessionAsync("u1");
+        var result = await attendanceService.CreateQrSessionAsync(userId);
         var after = DateTime.UtcNow;
 
-        Assert.NotNull(added);
-        Assert.Equal(client.Id, added!.ClientId);
-        Assert.False(string.IsNullOrWhiteSpace(added.Token));
-        Assert.True(added.ExpireDate > added.CreateDate);
+        Assert.NotNull(createdSession);
+        Assert.Equal(client.Id, createdSession!.ClientId);
+        Assert.False(string.IsNullOrWhiteSpace(createdSession.Token));
+        Assert.True(createdSession.ExpireDate > createdSession.CreateDate);
 
-        Assert.Equal(added.Token, res.Token);
-        Assert.Equal(added.ExpireDate, res.ExpireDate);
+        Assert.Equal(createdSession.Token, result.Token);
+        Assert.Equal(createdSession.ExpireDate, result.ExpireDate);
 
-        // default ttl = 3 minutes, allow some jitter
         var expectedMin = before.AddMinutes(3).AddSeconds(-10);
         var expectedMax = after.AddMinutes(3).AddSeconds(10);
-        Assert.True(res.ExpireDate >= expectedMin && res.ExpireDate <= expectedMax);
+        Assert.True(result.ExpireDate >= expectedMin && result.ExpireDate <= expectedMax);
 
-        clientRepo.VerifyAll();
-        qrRepo.VerifyAll();
+        clientRepositoryMock.VerifyAll();
+        qrSessionRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task CheckInByTokenAsync_WhenSessionMissing_Throws()
+    [Theory, AutoMoqData]
+    public async Task CheckIn_MissingSession_Throws(
+        [Frozen] IQrSessionRepository qrRepo,
+        AttendanceService attendanceService
+    )
     {
-        var qrRepo = new Mock<IQrSessionRepository>(MockBehavior.Strict);
-        qrRepo.Setup(r => r.GetByTokenAsync("t")).ReturnsAsync((QrSession?)null);
+        const string token = "t";
+        var qrSessionRepositoryMock = Mock.Get(qrRepo);
+        qrSessionRepositoryMock.Setup(r => r.GetByTokenAsync(token)).ReturnsAsync((QrSession?)null);
 
-        var svc = new AttendanceService(
-            clientRepository: Mock.Of<IClientRepository>(),
-            membershipRepository: Mock.Of<IMembershipRepository>(),
-            qrSessionRepository: qrRepo.Object,
-            visitLogRepository: Mock.Of<IVisitLogRepository>()
-        );
-
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CheckInByTokenAsync("t"));
-        Assert.Equal("QR session not found.", ex.Message);
-        qrRepo.VerifyAll();
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CheckInByTokenAsync(token));
+        Assert.Equal("QR session not found.", exception.Message);
+        qrSessionRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task CheckInByTokenAsync_WhenSessionExpired_Throws()
+    [Theory, AutoMoqData]
+    public async Task CheckIn_ExpiredSession_Throws(
+        [Frozen] IQrSessionRepository qrRepo,
+        AttendanceService attendanceService
+    )
     {
-        var session = new QrSession
+        const string token = "t";
+        var qrSessionRepositoryMock = Mock.Get(qrRepo);
+
+        var expiredSession = new QrSession
         {
-            Token = "t",
+            Token = token,
             CreateDate = DateTime.UtcNow.AddMinutes(-10),
             ExpireDate = DateTime.UtcNow.AddMinutes(-1),
             ClientId = Guid.NewGuid()
         };
 
-        var qrRepo = new Mock<IQrSessionRepository>(MockBehavior.Strict);
-        qrRepo.Setup(r => r.GetByTokenAsync("t")).ReturnsAsync(session);
+        qrSessionRepositoryMock.Setup(r => r.GetByTokenAsync(token)).ReturnsAsync(expiredSession);
 
-        var svc = new AttendanceService(
-            clientRepository: Mock.Of<IClientRepository>(),
-            membershipRepository: Mock.Of<IMembershipRepository>(),
-            qrSessionRepository: qrRepo.Object,
-            visitLogRepository: Mock.Of<IVisitLogRepository>()
-        );
-
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CheckInByTokenAsync("t"));
-        Assert.Equal("QR session expired.", ex.Message);
-        qrRepo.VerifyAll();
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CheckInByTokenAsync(token));
+        Assert.Equal("QR session expired.", exception.Message);
+        qrSessionRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task CheckInByTokenAsync_WhenOpenVisitExists_ReturnsIt_WithoutCreatingNew()
+    [Theory, AutoMoqData]
+    public async Task CheckIn_OpenVisit_ReturnsExisting(
+        [Frozen] IQrSessionRepository qrRepo,
+        [Frozen] IVisitLogRepository visitRepo,
+        AttendanceService attendanceService
+    )
     {
+        const string token = "t";
+        var qrSessionRepositoryMock = Mock.Get(qrRepo);
+        var visitLogRepositoryMock = Mock.Get(visitRepo);
+
         var clientId = Guid.NewGuid();
-        var session = new QrSession
+        var qrSession = new QrSession
         {
-            Token = "t",
+            Token = token,
             CreateDate = DateTime.UtcNow,
             ExpireDate = DateTime.UtcNow.AddMinutes(5),
             ClientId = clientId
         };
 
-        var open = new VisitLog
+        var openVisitLog = new VisitLog
         {
             Id = 10,
             ClientId = clientId,
@@ -147,36 +146,37 @@ public class AttendanceServiceTests
             LeaveDate = null
         };
 
-        var qrRepo = new Mock<IQrSessionRepository>(MockBehavior.Strict);
-        qrRepo.Setup(r => r.GetByTokenAsync("t")).ReturnsAsync(session);
+        qrSessionRepositoryMock.Setup(r => r.GetByTokenAsync(token)).ReturnsAsync(qrSession);
 
-        var visitRepo = new Mock<IVisitLogRepository>(MockBehavior.Strict);
-        visitRepo.Setup(r => r.GetOpenVisitByClientIdAsync(clientId)).ReturnsAsync(open);
+        visitLogRepositoryMock.Setup(r => r.GetOpenVisitByClientIdAsync(clientId)).ReturnsAsync(openVisitLog);
 
-        var svc = new AttendanceService(
-            clientRepository: Mock.Of<IClientRepository>(),
-            membershipRepository: Mock.Of<IMembershipRepository>(),
-            qrSessionRepository: qrRepo.Object,
-            visitLogRepository: visitRepo.Object
-        );
+        var result = await attendanceService.CheckInByTokenAsync(token);
+        Assert.Equal(10, result.Id);
+        Assert.Equal(clientId, result.ClientId);
+        Assert.Equal(99, result.MembershipId);
+        Assert.Null(result.LeaveDate);
 
-        var res = await svc.CheckInByTokenAsync("t");
-        Assert.Equal(10, res.Id);
-        Assert.Equal(clientId, res.ClientId);
-        Assert.Equal(99, res.MembershipId);
-        Assert.Null(res.LeaveDate);
-
-        visitRepo.VerifyAll();
-        qrRepo.VerifyAll();
+        visitLogRepositoryMock.VerifyAll();
+        qrSessionRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task CheckInByTokenAsync_WhenNoOpenVisit_CreatesVisit_AndDeletesToken()
+    [Theory, AutoMoqData]
+    public async Task CheckIn_NoOpenVisit_CreatesVisitAndDeletesToken(
+        [Frozen] IQrSessionRepository qrRepo,
+        [Frozen] IVisitLogRepository visitRepo,
+        [Frozen] IMembershipRepository membershipRepo,
+        AttendanceService attendanceService
+    )
     {
+        const string token = "t";
+        var qrSessionRepositoryMock = Mock.Get(qrRepo);
+        var visitLogRepositoryMock = Mock.Get(visitRepo);
+        var membershipRepositoryMock = Mock.Get(membershipRepo);
+
         var clientId = Guid.NewGuid();
-        var session = new QrSession
+        var qrSession = new QrSession
         {
-            Token = "t",
+            Token = token,
             CreateDate = DateTime.UtcNow,
             ExpireDate = DateTime.UtcNow.AddMinutes(5),
             ClientId = clientId
@@ -192,100 +192,97 @@ public class AttendanceServiceTests
             ExpireDate = DateTime.UtcNow.AddDays(29)
         };
 
-        var qrRepo = new Mock<IQrSessionRepository>(MockBehavior.Strict);
-        qrRepo.Setup(r => r.GetByTokenAsync("t")).ReturnsAsync(session);
-        qrRepo.Setup(r => r.DeleteByTokenAsync("t")).Returns(Task.CompletedTask);
+        qrSessionRepositoryMock.Setup(r => r.GetByTokenAsync(token)).ReturnsAsync(qrSession);
+        qrSessionRepositoryMock.Setup(r => r.DeleteByTokenAsync(token)).Returns(Task.CompletedTask);
 
-        var visitRepo = new Mock<IVisitLogRepository>(MockBehavior.Strict);
-        visitRepo.Setup(r => r.GetOpenVisitByClientIdAsync(clientId)).ReturnsAsync((VisitLog?)null);
+        visitLogRepositoryMock.Setup(r => r.GetOpenVisitByClientIdAsync(clientId)).ReturnsAsync((VisitLog?)null);
 
-        VisitLog? added = null;
-        visitRepo.Setup(r => r.AddAsync(It.IsAny<VisitLog>()))
-            .Callback<VisitLog>(v => added = v)
+        VisitLog? createdVisitLog = null;
+        visitLogRepositoryMock.Setup(r => r.AddAsync(It.IsAny<VisitLog>()))
+            .Callback<VisitLog>(visitLog => createdVisitLog = visitLog)
             .Returns(Task.CompletedTask);
 
-        var membershipRepo = new Mock<IMembershipRepository>(MockBehavior.Strict);
-        membershipRepo.Setup(r => r.GetByClientIdAsync(clientId)).ReturnsAsync(membership);
-
-        var svc = new AttendanceService(
-            clientRepository: Mock.Of<IClientRepository>(),
-            membershipRepository: membershipRepo.Object,
-            qrSessionRepository: qrRepo.Object,
-            visitLogRepository: visitRepo.Object
-        );
+        membershipRepositoryMock.Setup(r => r.GetByClientIdAsync(clientId)).ReturnsAsync(membership);
 
         var before = DateTime.UtcNow;
-        var res = await svc.CheckInByTokenAsync("t");
+        var result = await attendanceService.CheckInByTokenAsync(token);
         var after = DateTime.UtcNow;
 
-        Assert.NotNull(added);
-        Assert.Equal(clientId, added!.ClientId);
-        Assert.Equal(77, added.MembershipId);
-        Assert.True(added.EnterDate >= before.AddSeconds(-5) && added.EnterDate <= after.AddSeconds(5));
-        Assert.Null(added.LeaveDate);
+        Assert.NotNull(createdVisitLog);
+        Assert.Equal(clientId, createdVisitLog!.ClientId);
+        Assert.Equal(77, createdVisitLog.MembershipId);
+        Assert.True(createdVisitLog.EnterDate >= before.AddSeconds(-5) && createdVisitLog.EnterDate <= after.AddSeconds(5));
+        Assert.Null(createdVisitLog.LeaveDate);
 
-        Assert.Equal(clientId, res.ClientId);
-        Assert.Equal(77, res.MembershipId);
-        Assert.Null(res.LeaveDate);
+        Assert.Equal(clientId, result.ClientId);
+        Assert.Equal(77, result.MembershipId);
+        Assert.Null(result.LeaveDate);
 
-        membershipRepo.VerifyAll();
-        visitRepo.VerifyAll();
-        qrRepo.VerifyAll();
+        membershipRepositoryMock.VerifyAll();
+        visitLogRepositoryMock.VerifyAll();
+        qrSessionRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task CheckOutAsync_WhenOpenVisitMissing_Throws()
+    [Theory, AutoMoqData]
+    public async Task CheckOut_MissingOpenVisit_Throws(
+        [Frozen] IClientRepository clientRepo,
+        [Frozen] IVisitLogRepository visitRepo,
+        AttendanceService attendanceService
+    )
     {
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepo);
+        var visitLogRepositoryMock = Mock.Get(visitRepo);
+
         var client = new Client
         {
             Id = Guid.NewGuid(),
-            UserId = "u1",
-            LastName = "A",
-            FirstName = "B",
-            MiddleName = "C",
-            BirthDate = new DateTime(2000, 1, 1),
-            Gender = ClientGender.Unknown,
-            Phone = "0",
-            Email = "a@a.a"
+            UserId = userId,
+            LastName = "Ivanov",
+            FirstName = "Ivan",
+            MiddleName = "Ivanovich",
+            BirthDate = new DateTime(2000, 1, 2),
+            Gender = ClientGender.Male,
+            Phone = "+70000000000",
+            Email = "ivan@example.com"
         };
 
-        var clientRepo = new Mock<IClientRepository>(MockBehavior.Strict);
-        clientRepo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync(client);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
 
-        var visitRepo = new Mock<IVisitLogRepository>(MockBehavior.Strict);
-        visitRepo.Setup(r => r.GetOpenVisitByClientIdAsync(client.Id)).ReturnsAsync((VisitLog?)null);
+        visitLogRepositoryMock.Setup(r => r.GetOpenVisitByClientIdAsync(client.Id)).ReturnsAsync((VisitLog?)null);
 
-        var svc = new AttendanceService(
-            clientRepository: clientRepo.Object,
-            membershipRepository: Mock.Of<IMembershipRepository>(),
-            qrSessionRepository: Mock.Of<IQrSessionRepository>(),
-            visitLogRepository: visitRepo.Object
-        );
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CheckOutAsync(userId));
+        Assert.Equal("Open visit not found.", exception.Message);
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CheckOutAsync("u1"));
-        Assert.Equal("Open visit not found.", ex.Message);
-
-        clientRepo.VerifyAll();
-        visitRepo.VerifyAll();
+        clientRepositoryMock.VerifyAll();
+        visitLogRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task CheckOutAsync_SetsLeaveDate_AndUpdates()
+    [Theory, AutoMoqData]
+    public async Task CheckOut_SetsLeaveDate_Updates(
+        [Frozen] IClientRepository clientRepo,
+        [Frozen] IVisitLogRepository visitRepo,
+        AttendanceService attendanceService
+    )
     {
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepo);
+        var visitLogRepositoryMock = Mock.Get(visitRepo);
+
         var client = new Client
         {
             Id = Guid.NewGuid(),
-            UserId = "u1",
-            LastName = "A",
-            FirstName = "B",
-            MiddleName = "C",
-            BirthDate = new DateTime(2000, 1, 1),
-            Gender = ClientGender.Unknown,
-            Phone = "0",
-            Email = "a@a.a"
+            UserId = userId,
+            LastName = "Ivanov",
+            FirstName = "Ivan",
+            MiddleName = "Ivanovich",
+            BirthDate = new DateTime(2000, 1, 2),
+            Gender = ClientGender.Male,
+            Phone = "+70000000000",
+            Email = "ivan@example.com"
         };
 
-        var open = new VisitLog
+        var openVisitLog = new VisitLog
         {
             Id = 55,
             ClientId = client.Id,
@@ -294,31 +291,22 @@ public class AttendanceServiceTests
             LeaveDate = null
         };
 
-        var clientRepo = new Mock<IClientRepository>(MockBehavior.Strict);
-        clientRepo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync(client);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
 
-        var visitRepo = new Mock<IVisitLogRepository>(MockBehavior.Strict);
-        visitRepo.Setup(r => r.GetOpenVisitByClientIdAsync(client.Id)).ReturnsAsync(open);
-        visitRepo.Setup(r => r.UpdateAsync(open)).Returns(Task.CompletedTask);
-
-        var svc = new AttendanceService(
-            clientRepository: clientRepo.Object,
-            membershipRepository: Mock.Of<IMembershipRepository>(),
-            qrSessionRepository: Mock.Of<IQrSessionRepository>(),
-            visitLogRepository: visitRepo.Object
-        );
+        visitLogRepositoryMock.Setup(r => r.GetOpenVisitByClientIdAsync(client.Id)).ReturnsAsync(openVisitLog);
+        visitLogRepositoryMock.Setup(r => r.UpdateAsync(openVisitLog)).Returns(Task.CompletedTask);
 
         var before = DateTime.UtcNow;
-        var res = await svc.CheckOutAsync("u1");
+        var result = await attendanceService.CheckOutAsync(userId);
         var after = DateTime.UtcNow;
 
-        Assert.NotNull(open.LeaveDate);
-        Assert.True(open.LeaveDate >= before.AddSeconds(-5) && open.LeaveDate <= after.AddSeconds(5));
-        Assert.Equal(55, res.Id);
-        Assert.NotNull(res.LeaveDate);
+        Assert.NotNull(openVisitLog.LeaveDate);
+        Assert.True(openVisitLog.LeaveDate >= before.AddSeconds(-5) && openVisitLog.LeaveDate <= after.AddSeconds(5));
+        Assert.Equal(55, result.Id);
+        Assert.NotNull(result.LeaveDate);
 
-        clientRepo.VerifyAll();
-        visitRepo.VerifyAll();
+        clientRepositoryMock.VerifyAll();
+        visitLogRepositoryMock.VerifyAll();
     }
 }
 

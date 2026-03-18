@@ -1,3 +1,4 @@
+using AutoFixture.Xunit3;
 using Moq;
 using ZPassFit.Data.Models.Clients;
 using ZPassFit.Data.Models.Memberships;
@@ -10,208 +11,202 @@ namespace ZPassFit.Test;
 
 public class MembershipServiceTests
 {
-    [Fact]
-    public async Task GetPlansAsync_MapsPlans()
+    [Theory, AutoMoqData]
+    public async Task GetPlans_Maps(
+        [Frozen] IMembershipPlanRepository planRepo,
+        MembershipService membershipService
+    )
     {
-        var planRepo = new Mock<IMembershipPlanRepository>(MockBehavior.Strict);
-        planRepo.Setup(r => r.GetAllAsync()).ReturnsAsync([
+        var membershipPlanRepositoryMock = Mock.Get(planRepo);
+        membershipPlanRepositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync([
             new MembershipPlan
             {
                 Id = 1, 
                 Name = "Base",
-                Description = "Desc",
+                Description = "Standard access",
                 Durations = [30, 90],
                 Price = 1000
             }
         ]);
 
-        var svc = new MembershipService(
-            clientRepository: Mock.Of<IClientRepository>(),
-            planRepository: planRepo.Object,
-            membershipRepository: Mock.Of<IMembershipRepository>(),
-            paymentRepository: Mock.Of<IPaymentRepository>()
-        );
-
-        var plans = (await svc.GetPlansAsync()).ToArray();
+        var plans = (await membershipService.GetPlansAsync()).ToArray();
         Assert.Single(plans);
         Assert.Equal(1, plans[0].Id);
         Assert.Equal("Base", plans[0].Name);
-        Assert.Equal("Desc", plans[0].Description);
+        Assert.Equal("Standard access", plans[0].Description);
         Assert.Equal([30, 90], plans[0].Durations);
         Assert.Equal(1000, plans[0].Price);
 
-        planRepo.VerifyAll();
+        membershipPlanRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task GetMyMembershipAsync_WhenClientMissing_ReturnsNull()
+    [Theory, AutoMoqData]
+    public async Task GetMyMembership_MissingClient_ReturnsNull(
+        [Frozen] IClientRepository clientRepo,
+        MembershipService membershipService
+    )
     {
-        var clientRepo = new Mock<IClientRepository>(MockBehavior.Strict);
-        clientRepo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync((Client?)null);
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepo);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync((Client?)null);
 
-        var svc = new MembershipService(
-            clientRepository: clientRepo.Object,
-            planRepository: Mock.Of<IMembershipPlanRepository>(),
-            membershipRepository: Mock.Of<IMembershipRepository>(),
-            paymentRepository: Mock.Of<IPaymentRepository>()
-        );
+        var result = await membershipService.GetMyMembershipAsync(userId);
+        Assert.Null(result);
 
-        var res = await svc.GetMyMembershipAsync("u1");
-        Assert.Null(res);
-
-        clientRepo.VerifyAll();
+        clientRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task BuyMembershipAsync_WhenClientMissing_Throws()
+    [Theory, AutoMoqData]
+    public async Task BuyMembership_MissingClient_Throws(
+        [Frozen] IClientRepository clientRepo,
+        MembershipService membershipService
+    )
     {
-        var clientRepo = new Mock<IClientRepository>(MockBehavior.Strict);
-        clientRepo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync((Client?)null);
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepo);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync((Client?)null);
 
-        var svc = new MembershipService(
-            clientRepository: clientRepo.Object,
-            planRepository: Mock.Of<IMembershipPlanRepository>(),
-            membershipRepository: Mock.Of<IMembershipRepository>(),
-            paymentRepository: Mock.Of<IPaymentRepository>()
-        );
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(PlanId: 1, DurationDays: 30, Method: PaymentMethod.Cash)));
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            svc.BuyMembershipAsync("u1", new BuyMembershipRequest(PlanId: 1, DurationDays: 30, Method: PaymentMethod.Cash)));
-
-        Assert.Equal("Client profile not found.", ex.Message);
-        clientRepo.VerifyAll();
+        Assert.Equal("Client profile not found.", exception.Message);
+        clientRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task BuyMembershipAsync_WhenPlanMissing_Throws()
+    [Theory, AutoMoqData]
+    public async Task BuyMembership_MissingPlan_Throws(
+        [Frozen] IClientRepository clientRepo,
+        [Frozen] IMembershipPlanRepository planRepo,
+        MembershipService membershipService
+    )
     {
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepo);
+        var membershipPlanRepositoryMock = Mock.Get(planRepo);
+
         var client = new Client
         {
             Id = Guid.NewGuid(),
-            UserId = "u1",
-            LastName = "A",
-            FirstName = "B",
-            MiddleName = "C",
-            BirthDate = new DateTime(2000, 1, 1),
-            Gender = ClientGender.Unknown,
-            Phone = "0",
-            Email = "a@a.a"
+            UserId = userId,
+            LastName = "Ivanov",
+            FirstName = "Ivan",
+            MiddleName = "Ivanovich",
+            BirthDate = new DateTime(2000, 1, 2),
+            Gender = ClientGender.Male,
+            Phone = "+70000000000",
+            Email = "ivan@example.com"
         };
 
-        var clientRepo = new Mock<IClientRepository>(MockBehavior.Strict);
-        clientRepo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync(client);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
 
-        var planRepo = new Mock<IMembershipPlanRepository>(MockBehavior.Strict);
-        planRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((MembershipPlan?)null);
+        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((MembershipPlan?)null);
 
-        var svc = new MembershipService(
-            clientRepository: clientRepo.Object,
-            planRepository: planRepo.Object,
-            membershipRepository: Mock.Of<IMembershipRepository>(),
-            paymentRepository: Mock.Of<IPaymentRepository>()
-        );
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(PlanId: 1, DurationDays: 30, Method: PaymentMethod.Card)));
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            svc.BuyMembershipAsync("u1", new BuyMembershipRequest(PlanId: 1, DurationDays: 30, Method: PaymentMethod.Card)));
-
-        Assert.Equal("Membership plan not found.", ex.Message);
-        clientRepo.VerifyAll();
-        planRepo.VerifyAll();
+        Assert.Equal("Membership plan not found.", exception.Message);
+        clientRepositoryMock.VerifyAll();
+        membershipPlanRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task BuyMembershipAsync_WhenDurationNotAllowed_Throws()
+    [Theory, AutoMoqData]
+    public async Task BuyMembership_BadDuration_Throws(
+        [Frozen] IClientRepository clientRepo,
+        [Frozen] IMembershipPlanRepository planRepo,
+        MembershipService membershipService
+    )
     {
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepo);
+        var membershipPlanRepositoryMock = Mock.Get(planRepo);
+
         var client = new Client
         {
             Id = Guid.NewGuid(),
-            UserId = "u1",
-            LastName = "A",
-            FirstName = "B",
-            MiddleName = "C",
-            BirthDate = new DateTime(2000, 1, 1),
-            Gender = ClientGender.Unknown,
-            Phone = "0",
-            Email = "a@a.a"
+            UserId = userId,
+            LastName = "Ivanov",
+            FirstName = "Ivan",
+            MiddleName = "Ivanovich",
+            BirthDate = new DateTime(2000, 1, 2),
+            Gender = ClientGender.Male,
+            Phone = "+70000000000",
+            Email = "ivan@example.com"
         };
 
-        var clientRepo = new Mock<IClientRepository>(MockBehavior.Strict);
-        clientRepo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync(client);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
 
-        var planRepo = new Mock<IMembershipPlanRepository>(MockBehavior.Strict);
-        planRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new MembershipPlan
+        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new MembershipPlan
         {
-            Id = 1, Name = "Base", Description = "Desc", Durations = [30, 90], Price = 1000
+            Id = 1, Name = "Base", Description = "Standard access", Durations = [30, 90], Price = 1000
         });
 
-        var svc = new MembershipService(
-            clientRepository: clientRepo.Object,
-            planRepository: planRepo.Object,
-            membershipRepository: Mock.Of<IMembershipRepository>(),
-            paymentRepository: Mock.Of<IPaymentRepository>()
-        );
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(PlanId: 1, DurationDays: 365, Method: PaymentMethod.Card)));
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            svc.BuyMembershipAsync("u1", new BuyMembershipRequest(PlanId: 1, DurationDays: 365, Method: PaymentMethod.Card)));
-
-        Assert.Equal("Selected duration is not allowed for this plan.", ex.Message);
-        clientRepo.VerifyAll();
-        planRepo.VerifyAll();
+        Assert.Equal("Selected duration is not allowed for this plan.", exception.Message);
+        clientRepositoryMock.VerifyAll();
+        membershipPlanRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task BuyMembershipAsync_WhenNoExistingMembership_CreatesMembership_AndPayment()
+    [Theory, AutoMoqData]
+    public async Task BuyMembership_New_CreatesMembershipAndPayment(
+        [Frozen] IClientRepository clientRepo,
+        [Frozen] IMembershipPlanRepository planRepo,
+        [Frozen] IMembershipRepository membershipRepo,
+        [Frozen] IPaymentRepository paymentRepo,
+        MembershipService membershipService
+    )
     {
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepo);
+        var membershipPlanRepositoryMock = Mock.Get(planRepo);
+        var membershipRepositoryMock = Mock.Get(membershipRepo);
+        var paymentRepositoryMock = Mock.Get(paymentRepo);
+
         var client = new Client
         {
             Id = Guid.NewGuid(),
-            UserId = "u1",
-            LastName = "A",
-            FirstName = "B",
-            MiddleName = "C",
-            BirthDate = new DateTime(2000, 1, 1),
-            Gender = ClientGender.Unknown,
-            Phone = "0",
-            Email = "a@a.a"
+            UserId = userId,
+            LastName = "Ivanov",
+            FirstName = "Ivan",
+            MiddleName = "Ivanovich",
+            BirthDate = new DateTime(2000, 1, 2),
+            Gender = ClientGender.Male,
+            Phone = "+70000000000",
+            Email = "ivan@example.com"
         };
 
-        var plan = new MembershipPlan { Id = 7, Name = "Base", Description = "Desc", Durations = [30], Price = 1500 };
+        var membershipPlan = new MembershipPlan { Id = 7, Name = "Base", Description = "Standard access", Durations = [30], Price = 1500 };
 
-        var clientRepo = new Mock<IClientRepository>(MockBehavior.Strict);
-        clientRepo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync(client);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
 
-        var planRepo = new Mock<IMembershipPlanRepository>(MockBehavior.Strict);
-        planRepo.Setup(r => r.GetByIdAsync(7)).ReturnsAsync(plan);
+        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(7)).ReturnsAsync(membershipPlan);
 
-        var membershipRepo = new Mock<IMembershipRepository>(MockBehavior.Strict);
-        membershipRepo.Setup(r => r.GetByClientIdAsync(client.Id)).ReturnsAsync((Membership?)null);
+        membershipRepositoryMock.Setup(r => r.GetByClientIdAsync(client.Id)).ReturnsAsync((Membership?)null);
 
         Membership? addedMembership = null;
-        membershipRepo.Setup(r => r.AddAsync(It.IsAny<Membership>()))
-            .Callback<Membership>(m => addedMembership = m)
+        membershipRepositoryMock.Setup(r => r.AddAsync(It.IsAny<Membership>()))
+            .Callback<Membership>(membership => addedMembership = membership)
             .Returns(Task.CompletedTask);
 
-        var paymentRepo = new Mock<IPaymentRepository>(MockBehavior.Strict);
         Payment? addedPayment = null;
-        paymentRepo.Setup(r => r.AddAsync(It.IsAny<Payment>()))
-            .Callback<Payment>(p => addedPayment = p)
+        paymentRepositoryMock.Setup(r => r.AddAsync(It.IsAny<Payment>()))
+            .Callback<Payment>(payment => addedPayment = payment)
             .Returns(Task.CompletedTask);
-
-        var svc = new MembershipService(clientRepo.Object, planRepo.Object, membershipRepo.Object, paymentRepo.Object);
 
         var before = DateTime.UtcNow;
-        var res = await svc.BuyMembershipAsync("u1", new BuyMembershipRequest(PlanId: 7, DurationDays: 30, Method: PaymentMethod.Cash));
+        var result = await membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(PlanId: 7, DurationDays: 30, Method: PaymentMethod.Cash));
         var after = DateTime.UtcNow;
 
         Assert.NotNull(addedMembership);
         Assert.Equal(client.Id, addedMembership!.ClientId);
-        Assert.Equal(plan.Id, addedMembership.PlanId);
+        Assert.Equal(membershipPlan.Id, addedMembership.PlanId);
         Assert.Equal(MembershipStatus.Active, addedMembership.Status);
         Assert.True(addedMembership.ActivatedDate >= before.AddSeconds(-5) && addedMembership.ActivatedDate <= after.AddSeconds(5));
         Assert.Equal(addedMembership.ActivatedDate.AddDays(30).Date, addedMembership.ExpireDate.Date);
 
         Assert.NotNull(addedPayment);
-        Assert.Equal(plan.Price, addedPayment!.Amount);
+        Assert.Equal(membershipPlan.Price, addedPayment!.Amount);
         Assert.Equal(PaymentStatus.Completed, addedPayment.Status);
         Assert.Equal(PaymentMethod.Cash, addedPayment.Method);
         Assert.Equal(client.Id, addedPayment.ClientId);
@@ -219,33 +214,45 @@ public class MembershipServiceTests
         Assert.NotNull(addedPayment.PaymentDate);
         Assert.True(addedPayment.PaymentDate >= before.AddSeconds(-5) && addedPayment.PaymentDate <= after.AddSeconds(5));
 
-        Assert.Equal(addedMembership.PlanId, res.PlanId);
-        Assert.Equal(addedMembership.Status, res.Status);
+        Assert.Equal(addedMembership.PlanId, result.PlanId);
+        Assert.Equal(addedMembership.Status, result.Status);
 
-        clientRepo.VerifyAll();
-        planRepo.VerifyAll();
-        membershipRepo.VerifyAll();
-        paymentRepo.VerifyAll();
+        clientRepositoryMock.VerifyAll();
+        membershipPlanRepositoryMock.VerifyAll();
+        membershipRepositoryMock.VerifyAll();
+        paymentRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task BuyMembershipAsync_WhenMembershipExists_UpdatesMembership_AndPayment()
+    [Theory, AutoMoqData]
+    public async Task BuyMembership_Existing_UpdatesMembershipAndAddsPayment(
+        [Frozen] IClientRepository clientRepo,
+        [Frozen] IMembershipPlanRepository planRepo,
+        [Frozen] IMembershipRepository membershipRepo,
+        [Frozen] IPaymentRepository paymentRepo,
+        MembershipService membershipService
+    )
     {
+        var userId = "u1";
+        var clientRepositoryMock = Mock.Get(clientRepo);
+        var membershipPlanRepositoryMock = Mock.Get(planRepo);
+        var membershipRepositoryMock = Mock.Get(membershipRepo);
+        var paymentRepositoryMock = Mock.Get(paymentRepo);
+
         var client = new Client
         {
             Id = Guid.NewGuid(),
-            UserId = "u1",
-            LastName = "A",
-            FirstName = "B",
-            MiddleName = "C",
-            BirthDate = new DateTime(2000, 1, 1),
-            Gender = ClientGender.Unknown,
-            Phone = "0",
-            Email = "a@a.a"
+            UserId = userId,
+            LastName = "Ivanov",
+            FirstName = "Ivan",
+            MiddleName = "Ivanovich",
+            BirthDate = new DateTime(2000, 1, 2),
+            Gender = ClientGender.Male,
+            Phone = "+70000000000",
+            Email = "ivan@example.com"
         };
 
-        var plan = new MembershipPlan { Id = 9, Name = "Pro", Description = "Desc", Durations = [], Price = 2500 };
-        var existing = new Membership
+        var membershipPlan = new MembershipPlan { Id = 9, Name = "Pro", Description = "Unlimited access", Durations = [], Price = 2500 };
+        var existingMembership = new Membership
         {
             Id = 123,
             ClientId = client.Id,
@@ -255,30 +262,24 @@ public class MembershipServiceTests
             ExpireDate = new DateTime(2020, 2, 1)
         };
 
-        var clientRepo = new Mock<IClientRepository>(MockBehavior.Strict);
-        clientRepo.Setup(r => r.GetByUserIdAsync("u1")).ReturnsAsync(client);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
 
-        var planRepo = new Mock<IMembershipPlanRepository>(MockBehavior.Strict);
-        planRepo.Setup(r => r.GetByIdAsync(9)).ReturnsAsync(plan);
+        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(9)).ReturnsAsync(membershipPlan);
 
-        var membershipRepo = new Mock<IMembershipRepository>(MockBehavior.Strict);
-        membershipRepo.Setup(r => r.GetByClientIdAsync(client.Id)).ReturnsAsync(existing);
-        membershipRepo.Setup(r => r.UpdateAsync(existing)).Returns(Task.CompletedTask);
+        membershipRepositoryMock.Setup(r => r.GetByClientIdAsync(client.Id)).ReturnsAsync(existingMembership);
+        membershipRepositoryMock.Setup(r => r.UpdateAsync(existingMembership)).Returns(Task.CompletedTask);
 
-        var paymentRepo = new Mock<IPaymentRepository>(MockBehavior.Strict);
-        paymentRepo.Setup(r => r.AddAsync(It.IsAny<Payment>())).Returns(Task.CompletedTask);
+        paymentRepositoryMock.Setup(r => r.AddAsync(It.IsAny<Payment>())).Returns(Task.CompletedTask);
+        var result = await membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(PlanId: 9, DurationDays: 45, Method: PaymentMethod.Card));
 
-        var svc = new MembershipService(clientRepo.Object, planRepo.Object, membershipRepo.Object, paymentRepo.Object);
-        var res = await svc.BuyMembershipAsync("u1", new BuyMembershipRequest(PlanId: 9, DurationDays: 45, Method: PaymentMethod.Card));
+        Assert.Equal(123, result.Id);
+        Assert.Equal(9, result.PlanId);
+        Assert.Equal(MembershipStatus.Active, result.Status);
 
-        Assert.Equal(123, res.Id);
-        Assert.Equal(9, res.PlanId);
-        Assert.Equal(MembershipStatus.Active, res.Status);
-
-        clientRepo.VerifyAll();
-        planRepo.VerifyAll();
-        membershipRepo.VerifyAll();
-        paymentRepo.VerifyAll();
+        clientRepositoryMock.VerifyAll();
+        membershipPlanRepositoryMock.VerifyAll();
+        membershipRepositoryMock.VerifyAll();
+        paymentRepositoryMock.VerifyAll();
     }
 }
 
