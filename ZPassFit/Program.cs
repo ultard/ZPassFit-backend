@@ -9,6 +9,7 @@ using ZPassFit.Data.Repositories.Employees;
 using ZPassFit.Data.Repositories.Memberships;
 using ZPassFit.Services.Implementations;
 using ZPassFit.Services.Interfaces;
+using PredictionService = ZPassFit.Services.Implementations.PredictionService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +37,15 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+builder.Services.AddScoped<IPredictionService, PredictionService>();
+builder.Services.AddGrpcClient<ZPassFit.Protos.PredictionService.PredictionServiceClient>(options =>
+{
+    var predictionServiceUrl = 
+        builder.Configuration["Grpc:PredictionServiceUrl"]
+        ?? throw new ArgumentNullException();
+
+    options.Address = new Uri(predictionServiceUrl);
+});
 
 builder.Services.ConfigureApplicationCookie(options =>
 {

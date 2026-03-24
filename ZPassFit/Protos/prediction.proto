@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package prediction;
+
+option csharp_namespace = "ZPassFit.Protos";
+
+service PredictionService {
+  rpc Predict(PredictRequest) returns (PredictResponse);
+}
+
+message PredictRequest {
+  string gender = 1;
+  int32 age = 2;
+  double visits_per_week = 3;
+  int32 visits_last_7d = 4;
+  int32 visits_last_4w = 5;
+  int32 visits_prev_4w = 6;
+  int32 days_since_last_visit = 7;
+  double membership_price = 8;
+  int32 membership_duration_days = 9;
+  int32 membership_days_to_expire = 10;
+  optional double engagement_score = 11;
+}
+
+message PredictResponse {
+  int32 prediction = 1;
+  double churn_probability = 2;
+}
