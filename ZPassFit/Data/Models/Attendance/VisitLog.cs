@@ -7,7 +7,7 @@ public class VisitLog
 {
     public int Id { get; set; }
 
-    public DateTime EnterDate { get; set; } = DateTime.Now;
+    public DateTime EnterDate { get; set; } = DateTime.UtcNow;
     public DateTime? LeaveDate { get; set; }
 
     public int MembershipId { get; set; }

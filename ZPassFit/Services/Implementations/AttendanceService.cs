@@ -24,7 +24,7 @@ public class AttendanceService(
 
         var session = new QrSession
         {
-            Token = Guid.NewGuid().ToString("N"),
+            Token = Guid.NewGuid(),
             CreateDate = now,
             ExpireDate = expires,
             ClientId = client.Id
@@ -52,7 +52,7 @@ public class AttendanceService(
         return visits.Select(MapVisit);
     }
 
-    public async Task<VisitLogResponse> CheckInByTokenAsync(string token)
+    public async Task<VisitLogResponse> CheckInByTokenAsync(Guid token)
     {
         var session = await qrSessionRepository.GetByTokenAsync(token)
                       ?? throw new InvalidOperationException("QR session not found.");

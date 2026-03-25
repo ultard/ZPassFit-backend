@@ -1,6 +1,6 @@
 namespace ZPassFit.Dto;
 
-public record QrSessionResponse(string Token, DateTime ExpireDate);
+public record QrSessionResponse(Guid Token, DateTime ExpireDate);
 
 public record VisitLogResponse(
     int Id,

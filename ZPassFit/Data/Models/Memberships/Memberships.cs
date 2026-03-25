@@ -15,7 +15,7 @@ public class Membership
     public int Id { get; set; }
 
     public MembershipStatus Status { get; set; } = MembershipStatus.Active;
-    public DateTime ActivatedDate { get; set; } = DateTime.Now;
+    public DateTime ActivatedDate { get; set; } = DateTime.UtcNow;
     public DateTime ExpireDate { get; set; }
 
     public int PlanId { get; set; }

@@ -4,8 +4,8 @@ namespace ZPassFit.Data.Repositories.Attendance;
 
 public interface IQrSessionRepository
 {
-    Task<QrSession?> GetByTokenAsync(string token);
+    Task<QrSession?> GetByTokenAsync(Guid token);
     Task AddAsync(QrSession qrSession);
     Task UpdateAsync(QrSession qrSession);
-    Task DeleteByTokenAsync(string token);
+    Task DeleteByTokenAsync(Guid token);
 }

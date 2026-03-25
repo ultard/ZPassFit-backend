@@ -12,15 +12,15 @@ using ZPassFit.Data;
 namespace ZPassFit.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260317141017_BaseModels")]
-    partial class BaseModels
+    [Migration("20260325082921_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.3")
+                .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -226,9 +226,9 @@ namespace ZPassFit.Data.Migrations
 
             modelBuilder.Entity("ZPassFit.Data.Models.Attendance.QrSession", b =>
                 {
-                    b.Property<string>("Token")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
+                    b.Property<Guid>("Token")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("ClientId")
                         .HasColumnType("uuid");
@@ -354,7 +354,8 @@ namespace ZPassFit.Data.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)");
 
                     b.HasKey("Id");
 
@@ -658,7 +659,7 @@ namespace ZPassFit.Data.Migrations
             modelBuilder.Entity("ZPassFit.Data.Models.Clients.BonusTransaction", b =>
                 {
                     b.HasOne("ZPassFit.Data.Models.Clients.Client", "Client")
-                        .WithMany()
+                        .WithMany("BonusTransactions")
                         .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -754,6 +755,8 @@ namespace ZPassFit.Data.Migrations
 
             modelBuilder.Entity("ZPassFit.Data.Models.Clients.Client", b =>
                 {
+                    b.Navigation("BonusTransactions");
+
                     b.Navigation("Level");
 
                     b.Navigation("Membership");

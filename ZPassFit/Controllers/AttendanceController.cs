@@ -81,7 +81,7 @@ public class AttendanceController(
         "Открывает посещение по QR-токену (обычно сканируется на ресепшене). При успехе удаляет QR-сессию.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(VisitLogResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> CheckIn([FromRoute] string token)
+    public async Task<IResult> CheckIn([FromRoute] Guid token)
     {
         try
         {

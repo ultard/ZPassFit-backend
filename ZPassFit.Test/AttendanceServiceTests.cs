@@ -67,7 +67,7 @@ public class AttendanceServiceTests
 
         Assert.NotNull(createdSession);
         Assert.Equal(client.Id, createdSession!.ClientId);
-        Assert.False(string.IsNullOrWhiteSpace(createdSession.Token));
+        Assert.NotEqual(Guid.Empty, createdSession.Token);
         Assert.True(createdSession.ExpireDate > createdSession.CreateDate);
 
         Assert.Equal(createdSession.Token, result.Token);
@@ -88,7 +88,7 @@ public class AttendanceServiceTests
         AttendanceService attendanceService
     )
     {
-        const string token = "t";
+        var token = Guid.NewGuid();
         var qrSessionRepositoryMock = Mock.Get(qrRepo);
         qrSessionRepositoryMock.Setup(r => r.GetByTokenAsync(token)).ReturnsAsync((QrSession?)null);
 
@@ -105,7 +105,7 @@ public class AttendanceServiceTests
         AttendanceService attendanceService
     )
     {
-        const string token = "t";
+        var token = Guid.NewGuid();
         var qrSessionRepositoryMock = Mock.Get(qrRepo);
 
         var expiredSession = new QrSession
@@ -132,7 +132,7 @@ public class AttendanceServiceTests
         AttendanceService attendanceService
     )
     {
-        const string token = "t";
+        var token = Guid.NewGuid();
         var qrSessionRepositoryMock = Mock.Get(qrRepo);
         var visitLogRepositoryMock = Mock.Get(visitRepo);
 
@@ -177,7 +177,7 @@ public class AttendanceServiceTests
         AttendanceService attendanceService
     )
     {
-        const string token = "t";
+        var token = Guid.NewGuid();
         var qrSessionRepositoryMock = Mock.Get(qrRepo);
         var visitLogRepositoryMock = Mock.Get(visitRepo);
         var membershipRepositoryMock = Mock.Get(membershipRepo);

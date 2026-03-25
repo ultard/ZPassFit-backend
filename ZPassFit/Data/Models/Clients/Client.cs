@@ -19,8 +19,8 @@ public enum ClientGender
 
 public class Client
 {
-    public ICollection<BonusTransaction> BonusTransactions = [];
     public Guid Id { get; set; }
+    [MaxLength(36)]
     public string UserId { get; set; } = null!;
 
     [MaxLength(100)] public required string LastName { get; set; }
@@ -44,4 +44,5 @@ public class Client
 
     public Membership? Membership { get; set; }
     public ICollection<Payment> Payments { get; set; } = [];
+    public ICollection<BonusTransaction> BonusTransactions { get; set; } = [];
 }

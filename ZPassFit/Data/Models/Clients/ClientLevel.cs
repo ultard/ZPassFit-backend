@@ -2,7 +2,7 @@ namespace ZPassFit.Data.Models.Clients;
 
 public class ClientLevel
 {
-    public DateTime ReceiveDate = DateTime.Now;
+    public DateTime ReceiveDate = DateTime.UtcNow;
     public DateTime? RevocationDate;
     public int Id { get; set; }
 

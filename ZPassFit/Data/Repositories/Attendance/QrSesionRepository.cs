@@ -5,7 +5,7 @@ namespace ZPassFit.Data.Repositories.Attendance;
 
 public class QrSessionRepository(ApplicationDbContext context) : IQrSessionRepository
 {
-    public async Task<QrSession?> GetByTokenAsync(string token)
+    public async Task<QrSession?> GetByTokenAsync(Guid token)
     {
         return await context.QrSessions
             .Include(q => q.Client)
@@ -24,7 +24,7 @@ public class QrSessionRepository(ApplicationDbContext context) : IQrSessionRepos
         await context.SaveChangesAsync();
     }
 
-    public async Task DeleteByTokenAsync(string token)
+    public async Task DeleteByTokenAsync(Guid token)
     {
         var session = await GetByTokenAsync(token);
         if (session != null)

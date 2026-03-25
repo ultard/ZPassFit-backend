@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using ZPassFit.Data;
+using ZPassFit.Data.Dev;
 using ZPassFit.Data.Models;
 using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Clients;
@@ -71,6 +72,8 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
+
+    await DevelopmentSeed.EnsureSeededAsync(scope.ServiceProvider);
 }
 
 app.UseHttpsRedirection();
