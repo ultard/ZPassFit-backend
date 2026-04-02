@@ -10,6 +10,8 @@ namespace ZPassFit.Data;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : IdentityDbContext<ApplicationUser>(options)
 {
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+
     public DbSet<Employee> Employees { get; set; }
 
     public DbSet<Client> Clients { get; set; }
@@ -23,4 +25,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<QrSession> QrSessions { get; set; }
     public DbSet<VisitLog> VisitLogs { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+
+        builder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
 }
