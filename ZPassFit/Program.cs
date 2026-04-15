@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using ZPassFit.Auth;
 using ZPassFit.Data;
+using ZPassFit.Middleware;
 using ZPassFit.Data.Audit;
 using ZPassFit.Data.Dev;
 using ZPassFit.Data.Models;
@@ -148,6 +149,7 @@ app.UseRouting();
 app.UseCors("DefaultCors");
 
 app.UseAuthentication();
+app.UseMiddleware<CurrentUserMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 

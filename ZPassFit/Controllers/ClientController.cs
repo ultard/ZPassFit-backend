@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using ZPassFit.Auth;
-using ZPassFit.Data.Models;
 using ZPassFit.Dto;
+using ZPassFit.Middleware;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Controllers;
@@ -13,8 +12,7 @@ namespace ZPassFit.Controllers;
 [Tags("Клиенты")]
 [Route("[controller]")]
 public class ClientController(
-    IClientService clientService,
-    UserManager<ApplicationUser> userManager
+    IClientService clientService
 ) : ControllerBase
 {
     [HttpGet("me")]
@@ -26,8 +24,7 @@ public class ClientController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMe()
     {
-        var user = await userManager.GetUserAsync(HttpContext.User);
-        if (user == null) return Results.Unauthorized();
+        var user = HttpContext.GetRequiredCurrentApplicationUser();
 
         var client = await clientService.GetMeAsync(user.Id);
         return client == null ? Results.NotFound() : Results.Ok(client);
@@ -43,8 +40,7 @@ public class ClientController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMyLevel()
     {
-        var user = await userManager.GetUserAsync(HttpContext.User);
-        if (user == null) return Results.Unauthorized();
+        var user = HttpContext.GetRequiredCurrentApplicationUser();
 
         var level = await clientService.GetMyActiveLevelAsync(user.Id);
         return level == null ? Results.NotFound() : Results.Ok(level);
@@ -59,8 +55,7 @@ public class ClientController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> UpsertMe([FromBody] UpsertClientMeRequest request)
     {
-        var user = await userManager.GetUserAsync(HttpContext.User);
-        if (user == null) return Results.Unauthorized();
+        var user = HttpContext.GetRequiredCurrentApplicationUser();
 
         var client = await clientService.UpsertMeAsync(user.Id, request);
         return Results.Ok(client);

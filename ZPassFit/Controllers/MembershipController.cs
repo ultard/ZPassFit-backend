@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using ZPassFit.Auth;
-using ZPassFit.Data.Models;
 using ZPassFit.Dto;
+using ZPassFit.Middleware;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Controllers;
@@ -13,8 +12,7 @@ namespace ZPassFit.Controllers;
 [Tags("Абонементы")]
 [Route("[controller]")]
 public class MembershipController(
-    IMembershipService membershipService,
-    UserManager<ApplicationUser> userManager
+    IMembershipService membershipService
 ) : ControllerBase
 {
     [AllowAnonymous]
@@ -37,8 +35,7 @@ public class MembershipController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IResult> GetMyMembership()
     {
-        var user = await userManager.GetUserAsync(HttpContext.User);
-        if (user == null) return Results.Unauthorized();
+        var user = HttpContext.GetRequiredCurrentApplicationUser();
 
         var membership = await membershipService.GetMyMembershipAsync(user.Id);
         return membership == null ? Results.NotFound() : Results.Ok(membership);
@@ -54,8 +51,7 @@ public class MembershipController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> BuyMembership([FromBody] BuyMembershipRequest request)
     {
-        var user = await userManager.GetUserAsync(HttpContext.User);
-        if (user == null) return Results.Unauthorized();
+        var user = HttpContext.GetRequiredCurrentApplicationUser();
 
         try
         {
@@ -76,8 +72,7 @@ public class MembershipController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetMyPayments()
     {
-        var user = await userManager.GetUserAsync(HttpContext.User);
-        if (user == null) return Results.Unauthorized();
+        var user = HttpContext.GetRequiredCurrentApplicationUser();
 
         var payments = await membershipService.GetMyPaymentsAsync(user.Id);
         return Results.Ok(payments);

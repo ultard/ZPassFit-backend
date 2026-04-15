@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using ZPassFit.Auth;
-using ZPassFit.Data.Models;
 using ZPassFit.Dto;
+using ZPassFit.Middleware;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Controllers;
@@ -13,7 +12,6 @@ namespace ZPassFit.Controllers;
 [Tags("Посещения")]
 [Route("[controller]")]
 public class AttendanceController(
-    UserManager<ApplicationUser> userManager,
     IAttendanceService attendanceService
 ) : ControllerBase
 {
@@ -25,10 +23,7 @@ public class AttendanceController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetVisits()
     {
-        var user = await userManager.GetUserAsync(HttpContext.User);
-
-        if (user == null)
-            return Results.Unauthorized();
+        var user = HttpContext.GetRequiredCurrentApplicationUser();
 
         var visit = await attendanceService.GetOpenVisitAsync(user.Id);
 
@@ -43,8 +38,7 @@ public class AttendanceController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IResult> GetVisitHistory()
     {
-        var user = await userManager.GetUserAsync(HttpContext.User);
-        if (user == null) return Results.Unauthorized();
+        var user = HttpContext.GetRequiredCurrentApplicationUser();
 
         var visits = await attendanceService.GetVisitHistoryAsync(user.Id);
         return Results.Ok(visits);
@@ -60,8 +54,7 @@ public class AttendanceController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CreateSession()
     {
-        var user = await userManager.GetUserAsync(HttpContext.User);
-        if (user == null) return Results.Unauthorized();
+        var user = HttpContext.GetRequiredCurrentApplicationUser();
 
         try
         {
@@ -103,8 +96,7 @@ public class AttendanceController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> CheckOut()
     {
-        var user = await userManager.GetUserAsync(HttpContext.User);
-        if (user == null) return Results.Unauthorized();
+        var user = HttpContext.GetRequiredCurrentApplicationUser();
 
         try
         {
