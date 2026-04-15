@@ -33,6 +33,23 @@ public class ClientController(
         return client == null ? Results.NotFound() : Results.Ok(client);
     }
 
+    [HttpGet("me/level")]
+    [Authorize(Roles = Roles.Client)]
+    [EndpointSummary("Мой уровень лояльности")]
+    [EndpointDescription(
+        "Возвращает активный уровень текущего клиента (без отзыва). Если профиля клиента или уровня нет — 404.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MyClientLevelResponse))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> GetMyLevel()
+    {
+        var user = await userManager.GetUserAsync(HttpContext.User);
+        if (user == null) return Results.Unauthorized();
+
+        var level = await clientService.GetMyActiveLevelAsync(user.Id);
+        return level == null ? Results.NotFound() : Results.Ok(level);
+    }
+
     [HttpPut("me")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Создать/обновить профиль клиента")]

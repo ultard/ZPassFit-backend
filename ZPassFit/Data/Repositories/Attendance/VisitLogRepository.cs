@@ -56,4 +56,61 @@ public class VisitLogRepository(ApplicationDbContext context) : IVisitLogReposit
             .Take(take)
             .ToListAsync();
     }
+
+    public async Task<VisitLog?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await context.VisitLogs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(v => v.Id == id, cancellationToken);
+    }
+
+    public async Task<(IReadOnlyList<VisitLog> Items, int TotalCount)> GetPagedAsync(
+        DateTime? enterFromUtc,
+        DateTime? enterToUtc,
+        Guid? clientId,
+        bool? openOnly,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var query = context.VisitLogs.AsNoTracking().Include(v => v.Client).AsQueryable();
+
+        if (enterFromUtc is { } from)
+            query = query.Where(v => v.EnterDate >= from);
+
+        if (enterToUtc is { } to)
+            query = query.Where(v => v.EnterDate < to);
+
+        if (clientId is { } cid)
+            query = query.Where(v => v.ClientId == cid);
+
+        if (openOnly == true)
+            query = query.Where(v => v.LeaveDate == null);
+        else if (openOnly == false)
+            query = query.Where(v => v.LeaveDate != null);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            var pattern = $"%{term}%";
+            query = query.Where(v =>
+                EF.Functions.ILike(v.Client.LastName, pattern)
+                || EF.Functions.ILike(v.Client.FirstName, pattern)
+                || EF.Functions.ILike(v.Client.MiddleName, pattern)
+                || EF.Functions.ILike(v.Client.Phone, pattern)
+                || EF.Functions.ILike(v.Client.Email, pattern)
+            );
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .OrderByDescending(v => v.EnterDate)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
 }

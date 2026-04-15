@@ -5,12 +5,22 @@ using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Services.Implementations;
 
-public class ClientService(IClientRepository clientRepository) : IClientService
+public class ClientService(IClientRepository clientRepository, IClientLevelRepository clientLevelRepository)
+    : IClientService
 {
     public async Task<ClientResponse?> GetMeAsync(string userId)
     {
         var client = await clientRepository.GetByUserIdAsync(userId);
         return client == null ? null : Map(client);
+    }
+
+    public async Task<MyClientLevelResponse?> GetMyActiveLevelAsync(string userId)
+    {
+        var client = await clientRepository.GetByUserIdAsync(userId);
+        if (client == null) return null;
+
+        var clientLevel = await clientLevelRepository.GetActiveByClientIdAsync(client.Id);
+        return clientLevel == null ? null : MapClientLevel(clientLevel);
     }
 
     public async Task<ClientResponse> UpsertMeAsync(string userId, UpsertClientMeRequest request)
@@ -102,6 +112,23 @@ public class ClientService(IClientRepository clientRepository) : IClientService
             c.Status,
             c.Bonuses,
             c.Notes
+        );
+    }
+
+    private static MyClientLevelResponse MapClientLevel(ClientLevel cl)
+    {
+        return new MyClientLevelResponse(cl.Id, cl.ReceiveDate, MapLevel(cl.Level));
+    }
+
+    private static LevelResponse MapLevel(Level l)
+    {
+        return new LevelResponse(
+            l.Id,
+            l.Name,
+            l.ActivateDays,
+            l.GraceDays,
+            l.PreviousLevelId,
+            l.PreviousLevel?.Name
         );
     }
 }

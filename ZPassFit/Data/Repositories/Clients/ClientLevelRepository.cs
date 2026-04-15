@@ -17,6 +17,7 @@ public class ClientLevelRepository(ApplicationDbContext context) : IClientLevelR
     {
         return await context.ClientLevels
             .Include(cl => cl.Level)
+            .ThenInclude(l => l.PreviousLevel)
             .FirstOrDefaultAsync(cl => cl.ClientId == clientId && cl.RevocationDate == null);
     }
 

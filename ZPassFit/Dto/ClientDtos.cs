@@ -49,3 +49,12 @@ public record UpsertClientMeRequest(
     [property: MaxLength(255)] string Email,
     [property: MaxLength(100)] string? Notes
 );
+
+/// <summary>
+/// Активный уровень лояльности текущего клиента.
+/// </summary>
+public record MyClientLevelResponse(
+    int ClientLevelId,
+    DateTime ReceiveDate,
+    LevelResponse Level
+);

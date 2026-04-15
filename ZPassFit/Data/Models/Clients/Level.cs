@@ -4,7 +4,7 @@ namespace ZPassFit.Data.Models.Clients;
 
 public class Level
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     [MaxLength(20)] public required string Name { get; set; }
 
@@ -12,6 +12,6 @@ public class Level
 
     [Range(0, int.MaxValue)] public int GraceDays { get; set; }
 
-    public int? PreviousLevelId { get; set; }
+    public Guid? PreviousLevelId { get; set; }
     public Level? PreviousLevel { get; set; }
 }

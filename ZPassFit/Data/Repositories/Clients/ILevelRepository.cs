@@ -4,8 +4,11 @@ namespace ZPassFit.Data.Repositories.Clients;
 
 public interface ILevelRepository
 {
-    Task<Level?> GetByIdAsync(int id);
+    Task<IReadOnlyList<Level>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<Level?> GetByIdAsync(Guid id);
     Task AddAsync(Level level);
     Task UpdateAsync(Level level);
-    Task DeleteAsync(int id);
+    Task DeleteAsync(Guid id);
+    Task<int> CountClientLevelsUsingLevelAsync(Guid levelId, CancellationToken cancellationToken = default);
+    Task<int> CountLevelsWithPreviousPointingToAsync(Guid levelId, CancellationToken cancellationToken = default);
 }
