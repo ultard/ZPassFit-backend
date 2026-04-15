@@ -37,6 +37,7 @@ jobs:
           --configuration Release
           --verbosity minimal
           --collect:"XPlat Code Coverage"
+          --settings "${{ github.workspace }}/coverlet.runsettings"
           --results-directory "${{ github.workspace }}/TestResults"
 
       - name: ReportGenerator

@@ -2,7 +2,9 @@ using AutoFixture;
 using AutoFixture.AutoMoq;
 using AutoFixture.Kernel;
 using AutoFixture.Xunit3;
+using Microsoft.Extensions.Options;
 using Moq;
+using ZPassFit.Auth;
 
 namespace ZPassFit.Test;
 
@@ -16,6 +18,19 @@ public sealed class AutoMoqDataAttribute() : AutoDataAttribute(CreateFixture)
         {
             ConfigureMembers = true
         });
+
+        fixture.Register(() =>
+            Options.Create(
+                new JwtOptions
+                {
+                    Secret = "01234567890123456789012345678901",
+                    Issuer = "test-issuer",
+                    Audience = "test-audience",
+                    AccessTokenExpirationMinutes = 60,
+                    RefreshTokenExpirationDays = 30
+                }
+            )
+        );
 
         fixture.Customizations.Insert(0, new StrictMockBuilder());
 

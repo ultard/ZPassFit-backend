@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <!-- [Assembly]Type — https://github.com/coverlet-coverage/coverlet/blob/master/Documentation/MSBuildIntegration.md#filters -->
+          <Exclude>[ZPassFit.Test]*,[coverlet.*]*,[Microsoft.AspNetCore.OpenApi]*,[*]*System.Runtime.CompilerServices*</Exclude>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <SkipAutoProps>true</SkipAutoProps>
+          <ExcludeByAttribute>CompilerGeneratedAttribute,GeneratedCodeAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <ExcludeByFile>**/Data/Migrations/**/*.cs,**/Program.cs,**/Data/Dev/**/*.cs,**/obj/**/*.cs,**/ApplicationDbContext.cs</ExcludeByFile>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

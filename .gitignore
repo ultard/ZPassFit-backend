@@ -4,5 +4,8 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 /.idea
+/.vscode
+
+TestResults
 
 .env

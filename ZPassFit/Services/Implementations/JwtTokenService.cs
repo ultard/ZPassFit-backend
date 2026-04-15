@@ -2,20 +2,18 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using ZPassFit.Auth;
-using ZPassFit.Data;
 using ZPassFit.Data.Models;
+using ZPassFit.Data.Repositories.Auth;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Services.Implementations;
 
 public class JwtTokenService(
-    ApplicationDbContext db,
-    UserManager<ApplicationUser> userManager,
+    IRefreshTokenRepository refreshTokens,
+    IApplicationUserIdentityService users,
     IOptions<JwtOptions> options
 ) : IJwtTokenService
 {
@@ -28,11 +26,11 @@ public class JwtTokenService(
         CancellationToken cancellationToken = default
     )
     {
-        var (accessToken, expiresAtUtc) = await CreateAccessTokenAsync(user);
+        var (accessToken, expiresAtUtc) = await CreateAccessTokenAsync(user, cancellationToken);
         var (refreshToken, refreshExpiresAtUtc) = CreateRefreshToken(user);
         var hash = HashToken(refreshToken);
 
-        db.RefreshTokens.Add(
+        await refreshTokens.AddAndSaveAsync(
             new RefreshToken
             {
                 Id = Guid.NewGuid(),
@@ -40,10 +38,9 @@ public class JwtTokenService(
                 TokenHash = hash,
                 ExpiresAt = refreshExpiresAtUtc,
                 CreatedAt = DateTime.UtcNow
-            }
+            },
+            cancellationToken
         );
-
-        await db.SaveChangesAsync(cancellationToken);
         return new AuthTokenPair(accessToken, refreshToken, expiresAtUtc);
     }
 
@@ -59,10 +56,7 @@ public class JwtTokenService(
             return null;
 
         var hash = HashToken(refreshToken);
-        var stored = await db.RefreshTokens.FirstOrDefaultAsync(
-            t => t.TokenHash == hash && t.RevokedAt == null && t.ExpiresAt > DateTime.UtcNow,
-            cancellationToken
-        );
+        var stored = await refreshTokens.FindActiveByHashAsync(hash, cancellationToken);
 
         if (stored == null)
             return null;
@@ -70,12 +64,11 @@ public class JwtTokenService(
         if (!string.Equals(stored.UserId, userId, StringComparison.Ordinal))
             return null;
 
-        var user = await userManager.FindByIdAsync(userId);
+        var user = await users.FindByIdAsync(userId, cancellationToken);
         if (user == null)
             return null;
 
-        stored.RevokedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(cancellationToken);
+        await refreshTokens.RevokeAsync(stored, cancellationToken);
 
         return await CreateTokensAsync(user, cancellationToken);
     }
@@ -87,31 +80,18 @@ public class JwtTokenService(
     )
     {
         var hash = HashToken(refreshToken);
-        var stored = await db.RefreshTokens.FirstOrDefaultAsync(
-            t => t.TokenHash == hash && t.UserId == userId && t.RevokedAt == null,
-            cancellationToken
-        );
-
-        if (stored == null)
-            return;
-
-        stored.RevokedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(cancellationToken);
+        await refreshTokens.TryRevokeAsync(hash, userId, cancellationToken);
     }
 
-    public async Task RevokeAllRefreshTokensAsync(string userId, CancellationToken cancellationToken = default)
-    {
-        var now = DateTime.UtcNow;
-        await db.RefreshTokens
-            .Where(t => t.UserId == userId && t.RevokedAt == null)
-            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, now), cancellationToken);
-    }
+    public Task RevokeAllRefreshTokensAsync(string userId, CancellationToken cancellationToken = default) =>
+        refreshTokens.RevokeAllForUserAsync(userId, cancellationToken);
 
     private async Task<(string Token, DateTime ExpiresAtUtc)> CreateAccessTokenAsync(
-        ApplicationUser user
+        ApplicationUser user,
+        CancellationToken cancellationToken
     )
     {
-        var roles = await userManager.GetRolesAsync(user);
+        var roles = await users.GetRolesAsync(user, cancellationToken);
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id),

@@ -12,6 +12,7 @@ using ZPassFit.Data.Models;
 using ZPassFit.OpenApi;
 using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Audit;
+using ZPassFit.Data.Repositories.Auth;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Employees;
 using ZPassFit.Data.Repositories.Memberships;
@@ -84,7 +85,9 @@ builder.Services
         };
     });
 
+builder.Services.AddScoped<IApplicationUserIdentityService, ApplicationUserIdentityService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
 builder.Services.AddScoped<IQrSessionRepository, QrSessionRepository>();
 builder.Services.AddScoped<IVisitLogRepository, VisitLogRepository>();
