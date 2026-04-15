@@ -6,10 +6,12 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using ZPassFit.Auth;
 using ZPassFit.Data;
+using ZPassFit.Data.Audit;
 using ZPassFit.Data.Dev;
 using ZPassFit.Data.Models;
 using ZPassFit.OpenApi;
 using ZPassFit.Data.Repositories.Attendance;
+using ZPassFit.Data.Repositories.Audit;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Employees;
 using ZPassFit.Data.Repositories.Memberships;
@@ -19,8 +21,14 @@ using PredictionService = ZPassFit.Services.Implementations.PredictionService;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<AuditSaveChangesInterceptor>();
+builder.Services.AddDbContext<ApplicationDbContext>(
+    (sp, options) =>
+    {
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+        options.AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>());
+    });
 
 builder.Services.AddCors(options =>
 {
@@ -80,6 +88,7 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
 builder.Services.AddScoped<IQrSessionRepository, QrSessionRepository>();
 builder.Services.AddScoped<IVisitLogRepository, VisitLogRepository>();
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<ILevelRepository, LevelRepository>();
@@ -95,6 +104,7 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();
 builder.Services.AddGrpcClient<ZPassFit.Protos.PredictionService.PredictionServiceClient>(options =>
 {

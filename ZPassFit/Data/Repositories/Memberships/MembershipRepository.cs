@@ -40,4 +40,11 @@ public class MembershipRepository(ApplicationDbContext context) : IMembershipRep
         context.Memberships.Remove(membership);
         await context.SaveChangesAsync();
     }
+
+    public async Task<int> CountActiveAsync(DateTime utcNow)
+    {
+        return await context.Memberships.CountAsync(m =>
+            m.Status == MembershipStatus.Active && m.ExpireDate > utcNow
+        );
+    }
 }

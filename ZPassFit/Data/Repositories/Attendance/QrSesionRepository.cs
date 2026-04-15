@@ -33,4 +33,9 @@ public class QrSessionRepository(ApplicationDbContext context) : IQrSessionRepos
             await context.SaveChangesAsync();
         }
     }
+
+    public async Task<int> CountActiveAsync(DateTime utcNow)
+    {
+        return await context.QrSessions.CountAsync(q => q.ExpireDate > utcNow);
+    }
 }

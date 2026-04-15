@@ -48,17 +48,4 @@ public class ClientController(
         var client = await clientService.UpsertMeAsync(user.Id, request);
         return Results.Ok(client);
     }
-
-    [HttpGet("{id:guid}")]
-    [Authorize(Roles = Roles.AdminOrEmployee)]
-    [EndpointSummary("Клиент по ID")]
-    [EndpointDescription("Возвращает информацию о клиенте по его идентификатору.")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ClientResponse))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetById([FromRoute] Guid id)
-    {
-        var client = await clientService.GetByIdAsync(id);
-        return client == null ? Results.NotFound() : Results.Ok(client);
-    }
 }

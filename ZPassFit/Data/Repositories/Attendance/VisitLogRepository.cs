@@ -32,4 +32,28 @@ public class VisitLogRepository(ApplicationDbContext context) : IVisitLogReposit
             .OrderByDescending(v => v.EnterDate)
             .ToListAsync();
     }
+
+    public async Task<int> CountVisitsEnteringBetweenAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive
+    )
+    {
+        return await context.VisitLogs.CountAsync(v =>
+            v.EnterDate >= fromUtcInclusive && v.EnterDate < toUtcExclusive
+        );
+    }
+
+    public async Task<int> CountOpenVisitsAsync()
+    {
+        return await context.VisitLogs.CountAsync(v => v.LeaveDate == null);
+    }
+
+    public async Task<IReadOnlyList<VisitLog>> GetRecentVisitsWithClientAsync(int take)
+    {
+        return await context.VisitLogs
+            .Include(v => v.Client)
+            .OrderByDescending(v => v.EnterDate)
+            .Take(take)
+            .ToListAsync();
+    }
 }

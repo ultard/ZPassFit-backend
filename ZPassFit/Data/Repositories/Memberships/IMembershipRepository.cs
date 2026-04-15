@@ -9,4 +9,5 @@ public interface IMembershipRepository
     Task AddAsync(Membership membership);
     Task UpdateAsync(Membership membership);
     Task DeleteAsync(int id);
+    Task<int> CountActiveAsync(DateTime utcNow);
 }

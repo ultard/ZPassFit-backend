@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ZPassFit.Data.Models;
 using ZPassFit.Data.Models.Attendance;
+using ZPassFit.Data.Models.Audit;
 using ZPassFit.Data.Models.Clients;
 using ZPassFit.Data.Models.Memberships;
 
@@ -26,6 +27,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<QrSession> QrSessions { get; set; }
     public DbSet<VisitLog> VisitLogs { get; set; }
 
+    public DbSet<AuditLog> AuditLogs { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -37,6 +40,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<AuditLog>(entity =>
+        {
+            entity.HasIndex(e => e.OccurredAtUtc);
+            entity.HasIndex(e => new { e.EntityType, e.EntityId });
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

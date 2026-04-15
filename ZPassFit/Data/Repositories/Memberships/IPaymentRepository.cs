@@ -9,4 +9,9 @@ public interface IPaymentRepository
     Task AddAsync(Payment payment);
     Task UpdateAsync(Payment payment);
     Task DeleteAsync(int id);
+
+    Task<(int Count, long TotalAmount)> GetCompletedPaymentsSummaryBetweenAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive
+    );
 }

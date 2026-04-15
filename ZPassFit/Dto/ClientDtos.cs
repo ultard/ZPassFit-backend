@@ -18,6 +18,27 @@ public record ClientResponse(
     string? Notes
 );
 
+/// <summary>
+/// Краткая карточка клиента для списков в дашборде.
+/// </summary>
+public record ClientListItemResponse(
+    Guid Id,
+    string LastName,
+    string FirstName,
+    string MiddleName,
+    string Phone,
+    string Email,
+    ClientStatus Status,
+    DateTime RegistrationDate
+);
+
+public record PagedClientsResponse(
+    int Page,
+    int PageSize,
+    int TotalCount,
+    IReadOnlyList<ClientListItemResponse> Items
+);
+
 public record UpsertClientMeRequest(
     [property: MaxLength(100)] string LastName,
     [property: MaxLength(100)] string FirstName,

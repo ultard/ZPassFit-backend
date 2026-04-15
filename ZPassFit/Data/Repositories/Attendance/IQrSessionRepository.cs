@@ -8,4 +8,5 @@ public interface IQrSessionRepository
     Task AddAsync(QrSession qrSession);
     Task UpdateAsync(QrSession qrSession);
     Task DeleteByTokenAsync(Guid token);
+    Task<int> CountActiveAsync(DateTime utcNow);
 }

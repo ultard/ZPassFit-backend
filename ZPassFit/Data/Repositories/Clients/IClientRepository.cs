@@ -9,4 +9,12 @@ public interface IClientRepository
     Task AddAsync(Client client);
     Task UpdateAsync(Client client);
     Task DeleteAsync(Guid id);
+    Task<int> CountAsync();
+
+    Task<(IReadOnlyList<Client> Items, int TotalCount)> SearchPagedAsync(
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default
+    );
 }

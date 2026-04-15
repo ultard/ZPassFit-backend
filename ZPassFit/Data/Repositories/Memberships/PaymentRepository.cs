@@ -41,4 +41,20 @@ public class PaymentRepository(ApplicationDbContext context) : IPaymentRepositor
         context.Payments.Remove(payment);
         await context.SaveChangesAsync();
     }
+
+    public async Task<(int Count, long TotalAmount)> GetCompletedPaymentsSummaryBetweenAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive
+    )
+    {
+        var query = context.Payments.Where(p =>
+            p.Status == PaymentStatus.Completed
+            && (p.PaymentDate ?? p.CreateDate) >= fromUtcInclusive
+            && (p.PaymentDate ?? p.CreateDate) < toUtcExclusive
+        );
+
+        var count = await query.CountAsync();
+        var total = await query.SumAsync(p => (long)p.Amount);
+        return (count, total);
+    }
 }

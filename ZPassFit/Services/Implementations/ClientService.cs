@@ -55,6 +55,38 @@ public class ClientService(IClientRepository clientRepository) : IClientService
         return client == null ? null : Map(client);
     }
 
+    public async Task<PagedClientsResponse> SearchPagedAsync(
+        string? search,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var (items, total) = await clientRepository.SearchPagedAsync(
+            search,
+            (page - 1) * pageSize,
+            pageSize,
+            cancellationToken
+        );
+
+        var mapped = items.Select(MapListItem).ToList();
+        return new PagedClientsResponse(page, pageSize, total, mapped);
+    }
+
+    private static ClientListItemResponse MapListItem(Client c)
+    {
+        return new ClientListItemResponse(
+            c.Id,
+            c.LastName,
+            c.FirstName,
+            c.MiddleName,
+            c.Phone,
+            c.Email,
+            c.Status,
+            c.RegistrationDate
+        );
+    }
+
     private static ClientResponse Map(Client c)
     {
         return new ClientResponse(
