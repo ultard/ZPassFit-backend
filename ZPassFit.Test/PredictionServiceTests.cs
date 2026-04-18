@@ -26,7 +26,7 @@ public class PredictionServiceTests
 
         var sut = new PredictionServiceImpl(grpc.Object, clientRepo.Object, membershipRepo.Object, visitRepo.Object);
 
-        var result = await sut.PredictAsync(id, TestContext.Current.CancellationToken);
+        var result = await sut.PredictChurnAsync(id, TestContext.Current.CancellationToken);
 
         Assert.Null(result);
         clientRepo.VerifyAll();
@@ -59,7 +59,7 @@ public class PredictionServiceTests
 
         var sut = new PredictionServiceImpl(grpc.Object, clientRepo.Object, membershipRepo.Object, visitRepo.Object);
 
-        var result = await sut.PredictAsync(id, TestContext.Current.CancellationToken);
+        var result = await sut.PredictChurnAsync(id, TestContext.Current.CancellationToken);
 
         Assert.Null(result);
         clientRepo.VerifyAll();
@@ -104,7 +104,7 @@ public class PredictionServiceTests
 
         var grpc = new Mock<ProtoPrediction.PredictionServiceClient>(MockBehavior.Strict);
         grpc
-            .Setup(c => c.PredictAsync(It.IsAny<PredictRequest>(), It.IsAny<Metadata>(), It.IsAny<DateTime?>(),
+            .Setup(c => c.PredictChurnAsync(It.IsAny<PredictChurnRequest>(), It.IsAny<Metadata>(), It.IsAny<DateTime?>(),
                 It.IsAny<CancellationToken>()))
             .Throws(new RpcException(new Status(StatusCode.Unavailable, "down")));
 
@@ -119,7 +119,7 @@ public class PredictionServiceTests
         var sut = new PredictionServiceImpl(grpc.Object, clientRepo.Object, membershipRepo.Object, visitRepo.Object);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            sut.PredictAsync(id, TestContext.Current.CancellationToken));
+            sut.PredictChurnAsync(id, TestContext.Current.CancellationToken));
 
         Assert.Equal("Prediction service unavailable.", ex.Message);
         Assert.NotNull(ex.InnerException);
@@ -176,16 +176,16 @@ public class PredictionServiceTests
 
         var grpcClient = new FakePredictionClient
         {
-            Response = new PredictResponse { Prediction = 2, ChurnProbability = 0.42 }
+            Response = new PredictChurnResponse { Prediction = 2, Probability = 0.42 }
         };
 
         var sut = new PredictionServiceImpl(grpcClient, clientRepo.Object, membershipRepo.Object, visitRepo.Object);
 
-        var result = await sut.PredictAsync(id, TestContext.Current.CancellationToken);
+        var result = await sut.PredictChurnAsync(id, TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal(2, result!.Prediction);
-        Assert.Equal(0.42, result.ChurnProbability);
+        Assert.Equal(0.42, result.Probability);
 
         clientRepo.VerifyAll();
         membershipRepo.VerifyAll();
@@ -194,15 +194,15 @@ public class PredictionServiceTests
 
     private sealed class FakePredictionClient : ProtoPrediction.PredictionServiceClient
     {
-        public required PredictResponse Response { get; init; }
+        public required PredictChurnResponse Response { get; init; }
 
-        public override AsyncUnaryCall<PredictResponse> PredictAsync(
-            PredictRequest request,
+        public override AsyncUnaryCall<PredictChurnResponse> PredictChurnAsync(
+            PredictChurnRequest request,
             Metadata? headers = null,
             DateTime? deadline = null,
             CancellationToken cancellationToken = default)
         {
-            return new AsyncUnaryCall<PredictResponse>(
+            return new AsyncUnaryCall<PredictChurnResponse>(
                 Task.FromResult(Response),
                 Task.FromResult(Metadata.Empty),
                 () => Status.DefaultSuccess,

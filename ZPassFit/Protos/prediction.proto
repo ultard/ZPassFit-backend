@@ -5,10 +5,10 @@ package prediction;
 option csharp_namespace = "ZPassFit.Protos";
 
 service PredictionService {
-  rpc Predict(PredictRequest) returns (PredictResponse);
+  rpc PredictChurn(PredictChurnRequest) returns (PredictChurnResponse);
 }
 
-message PredictRequest {
+message PredictChurnRequest {
   string gender = 1;
   int32 age = 2;
   double visits_per_week = 3;
@@ -22,7 +22,7 @@ message PredictRequest {
   optional double engagement_score = 11;
 }
 
-message PredictResponse {
+message PredictChurnResponse {
   int32 prediction = 1;
-  double churn_probability = 2;
+  double probability = 2;
 }

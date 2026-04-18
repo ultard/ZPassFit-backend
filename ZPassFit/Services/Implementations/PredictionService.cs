@@ -15,7 +15,7 @@ public class PredictionService(
     IVisitLogRepository visitLogRepository
 ) : IPredictionService
 {
-    public async Task<PredictClientResponse?> PredictAsync(Guid clientId, CancellationToken cancellationToken)
+    public async Task<ChurnPredictionResponse?> PredictChurnAsync(Guid clientId, CancellationToken cancellationToken)
     {
         var client = await clientRepository.GetByIdAsync(clientId);
         if (client == null)
@@ -48,7 +48,7 @@ public class PredictionService(
         var membershipDurationDays = Math.Max(1, (int)(membership.ExpireDate.Date - membership.ActivatedDate.Date).TotalDays);
         var membershipDaysToExpire = Math.Max(0, (int)(membership.ExpireDate.Date - now.Date).TotalDays);
 
-        var grpcRequest = new PredictRequest
+        var grpcRequest = new PredictChurnRequest
         {
             Gender = MapGender(client.Gender),
             Age = CalculateAge(client.BirthDate, now),
@@ -64,8 +64,8 @@ public class PredictionService(
 
         try
         {
-            var grpcResponse = await predictionClient.PredictAsync(grpcRequest, cancellationToken: cancellationToken);
-            return new PredictClientResponse(grpcResponse.Prediction, grpcResponse.ChurnProbability);
+            var grpcResponse = await predictionClient.PredictChurnAsync(grpcRequest, cancellationToken: cancellationToken);
+            return new ChurnPredictionResponse(grpcResponse.Prediction, grpcResponse.Probability);
         }
         catch (Exception exception)
         {

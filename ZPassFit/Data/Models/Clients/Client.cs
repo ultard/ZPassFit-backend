@@ -33,7 +33,7 @@ public class Client
     [MaxLength(255)] public required string Email { get; set; }
 
     public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
-    public ClientStatus Status { get; set; } = ClientStatus.Active;
+    public ClientStatus Status { get; set; } = ClientStatus.Pending;
 
     [Range(0, int.MaxValue)] public int Bonuses { get; set; }
 

@@ -14,18 +14,18 @@ public class PredictionController(
     IPredictionService predictionService
 ) : ControllerBase
 {
-    [HttpPost("predict")]
+    [HttpPost("churn")]
     [Authorize(Roles = Roles.AdminOrEmployee)]
-    [EndpointSummary("Предсказать отток")]
-    [EndpointDescription("Собирает данные клиента из БД, вызывает gRPC PredictionService и возвращает предсказание.")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PredictClientResponse))]
+    [EndpointSummary("Рассчитать вероятность оттока")]
+    [EndpointDescription("Собирает данные клиента из БД, вызывает gRPC PredictionService и возвращает вероятность оттока.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ChurnPredictionResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
-    public async Task<IResult> Predict([FromBody] PredictClientRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> PredictChurn([FromBody] ChurnPredictionRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            var prediction = await predictionService.PredictAsync(request.ClientId, cancellationToken);
+            var prediction = await predictionService.PredictChurnAsync(request.ClientId, cancellationToken);
             return prediction == null
                 ? Results.NotFound(new { error = "Client or membership not found." })
                 : Results.Ok(prediction);

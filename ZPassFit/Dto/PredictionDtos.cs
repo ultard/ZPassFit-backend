@@ -1,10 +1,10 @@
 namespace ZPassFit.Dto;
 
-public record PredictClientRequest(
+public record ChurnPredictionRequest(
     Guid ClientId
 );
 
-public record PredictClientResponse(
+public record ChurnPredictionResponse(
     int Prediction,
-    double ChurnProbability
+    double Probability
 );

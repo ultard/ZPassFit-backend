@@ -2,7 +2,25 @@ namespace ZPassFit.Dto;
 
 /// <param name="Email">Email адрес </param>
 /// <param name="Password">Пароль </param>
-public record RegisterRequest(string Email, string Password);
+/// <param name="LastName">Фамилия</param>
+/// <param name="FirstName">Имя</param>
+/// <param name="MiddleName">Отчество</param>
+/// <param name="BirthDate">Дата рождения (UTC)</param>
+/// <param name="Gender">Пол</param>
+/// <param name="Phone">Телефон</param>
+public record RegisterRequest(
+    string Email,
+    string Password,
+    string LastName,
+    string FirstName,
+    string MiddleName,
+    DateTime BirthDate,
+    Data.Models.Clients.ClientGender Gender,
+    string Phone
+);
+
+/// <param name="Status">Статус регистрации</param>
+public record RegisterResponse(string Status);
 
 /// <param name="Email">Email адрес</param>
 /// <param name="Password">Пароль</param>

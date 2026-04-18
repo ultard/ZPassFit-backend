@@ -2,7 +2,10 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using ZPassFit.Auth;
 using ZPassFit.Data.Models;
+using ZPassFit.Data.Models.Clients;
+using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Dto;
 using ZPassFit.Services.Interfaces;
 
@@ -14,14 +17,15 @@ namespace ZPassFit.Controllers;
 public class AuthController(
     SignInManager<ApplicationUser> signInManager,
     UserManager<ApplicationUser> userManager,
-    IJwtTokenService jwtTokenService
+    IJwtTokenService jwtTokenService,
+    IClientRepository clientRepository
 ) : ControllerBase
 {
     [HttpPost("register")]
     [EndpointSummary("Регистрация")]
-    [EndpointDescription("Создаёт нового пользователя.")]
-    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created, Description = "Регистрация прошла успешно")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Description = "Не удалось зарегистрировать пользователя")]
+    [EndpointDescription("Создаёт нового пользователя (клиента). Требуется подтверждение администратором.")]
+    [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status201Created, Description = "Регистрация прошла успешно")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Description = "Не удалось зарегистрироватся")]
     public async Task<IResult> Register([FromBody] RegisterRequest request)
     {
         var user = new ApplicationUser
@@ -34,9 +38,25 @@ public class AuthController(
 
         if (!result.Succeeded) return Results.BadRequest(result.Errors);
 
-        var tokens = await jwtTokenService.CreateTokensAsync(user);
-        var body = new AuthResponse(tokens.AccessToken, tokens.RefreshToken, tokens.AccessTokenExpiresAtUtc);
-        return Results.Created("/auth/login", body);
+        var addRole = await userManager.AddToRoleAsync(user, Roles.Client);
+        if (!addRole.Succeeded)
+            return Results.BadRequest(addRole.Errors);
+
+        var client = new Client
+        {
+            UserId = user.Id,
+            LastName = request.LastName.Trim(),
+            FirstName = request.FirstName.Trim(),
+            MiddleName = request.MiddleName.Trim(),
+            BirthDate = request.BirthDate,
+            Gender = request.Gender,
+            Phone = request.Phone.Trim(),
+            Email = request.Email.Trim()
+        };
+
+        await clientRepository.AddAsync(client);
+
+        return Results.Created("/auth/login", new RegisterResponse("Pending"));
     }
 
     [HttpPost("login")]
@@ -44,6 +64,7 @@ public class AuthController(
     [EndpointDescription("Проверяет учётные данные.")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK, Description = "Вход выполнен успешно")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "Неверная почта или пароль")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Аккаунт не подтверждён или заблокирован")]
     public async Task<IResult> Login([FromBody] LoginRequest request)
     {
         var user = await userManager.FindByEmailAsync(request.Email);
@@ -54,6 +75,13 @@ public class AuthController(
 
         if (!result.Succeeded)
             return Results.Unauthorized();
+
+        if (await userManager.IsInRoleAsync(user, Roles.Client))
+        {
+            var client = await clientRepository.GetByUserIdAsync(user.Id);
+            if (client is not { Status: ClientStatus.Active })
+                return Results.Forbid();
+        }
 
         var tokens = await jwtTokenService.CreateTokensAsync(user);
         var body = new AuthResponse(tokens.AccessToken, tokens.RefreshToken, tokens.AccessTokenExpiresAtUtc);

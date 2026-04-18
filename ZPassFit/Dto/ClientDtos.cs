@@ -39,17 +39,6 @@ public record PagedClientsResponse(
     IReadOnlyList<ClientListItemResponse> Items
 );
 
-public record UpsertClientMeRequest(
-    [property: MaxLength(100)] string LastName,
-    [property: MaxLength(100)] string FirstName,
-    [property: MaxLength(100)] string MiddleName,
-    DateTime BirthDate,
-    ClientGender Gender,
-    [property: MaxLength(15)] string Phone,
-    [property: MaxLength(255)] string Email,
-    [property: MaxLength(100)] string? Notes
-);
-
 /// <summary>
 /// Активный уровень лояльности текущего клиента.
 /// </summary>

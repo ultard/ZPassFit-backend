@@ -13,9 +13,8 @@ namespace ZPassFit.Controllers;
 public class DashboardController(IDashboardService dashboardService) : ControllerBase
 {
     [HttpGet("overview")]
-    [EndpointSummary("Сводка для главной дашборда")]
-    [EndpointDescription(
-        "KPI за выбранный календарный месяц (часовой пояс клуба из конфигурации), сравнение с предыдущим месяцем и ряды для графиков.")]
+    [EndpointSummary("Обзор статистики")]
+    [EndpointDescription("Статистика за выбранный календарный месяц.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DashboardOverviewResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

@@ -4,5 +4,5 @@ namespace ZPassFit.Services.Interfaces;
 
 public interface IPredictionService
 {
-    Task<PredictClientResponse?> PredictAsync(Guid clientId, CancellationToken cancellationToken);
+    Task<ChurnPredictionResponse?> PredictChurnAsync(Guid clientId, CancellationToken cancellationToken);
 }

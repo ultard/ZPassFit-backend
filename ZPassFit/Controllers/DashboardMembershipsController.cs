@@ -10,7 +10,7 @@ namespace ZPassFit.Controllers;
 
 [Authorize(Roles = Roles.AdminOrEmployee)]
 [ApiController]
-[Tags("Дашборд")]
+[Tags("Дашборд — абонементы")]
 [Route("dashboard/memberships")]
 public class DashboardMembershipsController(
     IMembershipRepository membershipRepository,

@@ -9,7 +9,7 @@ namespace ZPassFit.Controllers;
 
 [Authorize(Roles = Roles.AdminOrEmployee)]
 [ApiController]
-[Tags("Дашборд")]
+[Tags("Дашборд — посещения")]
 [Route("dashboard/visits")]
 public class DashboardVisitsController(IVisitLogRepository visitLogRepository) : ControllerBase
 {

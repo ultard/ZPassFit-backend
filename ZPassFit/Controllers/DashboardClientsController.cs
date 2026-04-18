@@ -8,7 +8,7 @@ namespace ZPassFit.Controllers;
 
 [Authorize(Roles = Roles.AdminOrEmployee)]
 [ApiController]
-[Tags("Дашборд")]
+[Tags("Дашборд — клиенты")]
 [Route("dashboard/clients")]
 public class DashboardClientsController(IClientService clientService) : ControllerBase
 {
@@ -56,5 +56,44 @@ public class DashboardClientsController(IClientService clientService) : Controll
     {
         var client = await clientService.GetByIdAsync(id);
         return client == null ? Results.NotFound() : Results.Ok(client);
+    }
+
+    [HttpPost("{id:guid}/approve")]
+    [EndpointSummary("Подтвердить клиента")]
+    [EndpointDescription("Переводит клиента в статус Активный.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> Approve([FromRoute] Guid id)
+    {
+        var ok = await clientService.ApproveAsync(id);
+        return ok ? Results.NoContent() : Results.NotFound();
+    }
+
+    [HttpPost("{id:guid}/block")]
+    [EndpointSummary("Заблокировать клиента")]
+    [EndpointDescription("Переводит клиента в статус Blocked и отзывает все refresh-токены.")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> Block([FromRoute] Guid id, CancellationToken cancellationToken)
+    {
+        var ok = await clientService.BlockAsync(id, cancellationToken);
+        return ok ? Results.NoContent() : Results.NotFound();
+    }
+
+    [HttpPost("{id:guid}/unblock")]
+    [EndpointSummary("Разблокировать клиента")]
+    [EndpointDescription("Переводит клиента в статус Active (после блокировки).")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> Unblock([FromRoute] Guid id)
+    {
+        var ok = await clientService.UnblockAsync(id);
+        return ok ? Results.NoContent() : Results.NotFound();
     }
 }

@@ -9,9 +9,9 @@ namespace ZPassFit.Controllers;
 
 [Authorize(Roles = Roles.Admin)]
 [ApiController]
-[Tags("Дашборд")]
-[Route("dashboard/audit")]
-public class DashboardAuditController(IAuditLogRepository auditLogRepository) : ControllerBase
+[Tags("Аудит")]
+[Route("[controller]")]
+public class AuditController(IAuditLogRepository auditLogRepository) : ControllerBase
 {
     private const int MinPage = 1;
     private const int MinPageSize = 1;

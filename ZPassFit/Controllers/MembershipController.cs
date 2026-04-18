@@ -16,7 +16,7 @@ public class MembershipController(
 ) : ControllerBase
 {
     [AllowAnonymous]
-    [HttpGet("membership/plans")]
+    [HttpGet("plans")]
     [EndpointSummary("Список тарифов")]
     [EndpointDescription("Возвращает список доступных тарифов абонементов.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<MembershipPlanResponse>))]
@@ -26,22 +26,7 @@ public class MembershipController(
         return Results.Ok(plans);
     }
 
-    [HttpGet("membership/me")]
-    [Authorize(Roles = Roles.Client)]
-    [EndpointSummary("Мой абонемент")]
-    [EndpointDescription("Возвращает текущий абонемент авторизованного клиента.")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MembershipResponse))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetMyMembership()
-    {
-        var user = HttpContext.GetRequiredCurrentApplicationUser();
-
-        var membership = await membershipService.GetMyMembershipAsync(user.Id);
-        return membership == null ? Results.NotFound() : Results.Ok(membership);
-    }
-
-    [HttpPost("membership/buy")]
+    [HttpPost("buy")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Купить абонемент")]
     [EndpointDescription(
@@ -62,19 +47,5 @@ public class MembershipController(
         {
             return Results.BadRequest(new { error = e.Message });
         }
-    }
-
-    [HttpGet("payments/me")]
-    [Authorize(Roles = Roles.Client)]
-    [EndpointSummary("Мои платежи")]
-    [EndpointDescription("Возвращает историю платежей текущего клиента.")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<PaymentResponse>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IResult> GetMyPayments()
-    {
-        var user = HttpContext.GetRequiredCurrentApplicationUser();
-
-        var payments = await membershipService.GetMyPaymentsAsync(user.Id);
-        return Results.Ok(payments);
     }
 }
