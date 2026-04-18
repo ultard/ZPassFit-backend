@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ZPassFit.Data.Models.Memberships;
+using ZPassFit.Data.Repositories;
 
 namespace ZPassFit.Data.Repositories.Memberships;
 
@@ -56,5 +57,29 @@ public class PaymentRepository(ApplicationDbContext context) : IPaymentRepositor
         var count = await query.CountAsync();
         var total = await query.SumAsync(p => (long)p.Amount);
         return (count, total);
+    }
+
+    public async Task<IReadOnlyList<ClubDayRevenueRow>> GetCompletedPaymentAmountsByClubDayAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        string timeZoneId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var completed = (int)PaymentStatus.Completed;
+        return await context.Database
+            .SqlQuery<ClubDayRevenueRow>(
+                $"""
+                 SELECT date(timezone({timeZoneId}, COALESCE(p."PaymentDate", p."CreateDate"))) AS "Date",
+                        SUM(p."Amount")::bigint AS "TotalAmount"
+                 FROM "Payments" AS p
+                 WHERE p."Status" = {completed}
+                   AND COALESCE(p."PaymentDate", p."CreateDate") >= {fromUtcInclusive}
+                   AND COALESCE(p."PaymentDate", p."CreateDate") < {toUtcExclusive}
+                 GROUP BY date(timezone({timeZoneId}, COALESCE(p."PaymentDate", p."CreateDate")))
+                 ORDER BY date(timezone({timeZoneId}, COALESCE(p."PaymentDate", p."CreateDate")))
+                 """
+            )
+            .ToListAsync(cancellationToken);
     }
 }

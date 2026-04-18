@@ -1,75 +1,42 @@
-using ZPassFit.Data.Models.Memberships;
-
 namespace ZPassFit.Dto;
 
-public record RecentCheckInItem(
-    int VisitId,
-    Guid ClientId,
-    string ClientFullName,
-    DateTime EnterDateUtc
+public record DashboardOverviewResponse(
+    DashboardPeriodMeta Period,
+    IReadOnlyList<DashboardKpiItem> Kpis,
+    DashboardSeries Series
 );
 
-/// <summary>
-/// Оперативные показатели для сотрудников (ресепшен) и администратора.
-/// </summary>
-public record EmployeeDashboardResponse(
-    DateTime TodayUtcStart,
-    DateTime TodayUtcEnd,
-    int VisitsTodayCount,
-    int ClientsInClubNow,
-    int ActiveQrSessionsCount,
-    IReadOnlyList<RecentCheckInItem> RecentCheckIns
+public record DashboardPeriodMeta(
+    string TimeZoneId,
+    int Year,
+    int Month,
+    string Label,
+    DateTime PeriodFromUtc,
+    DateTime PeriodToUtcExclusive,
+    DateTime CompareFromUtc,
+    DateTime CompareToUtcExclusive
 );
 
-/// <summary>
-/// Расширенная сводка для администратора.
-/// </summary>
-public record AdminDashboardResponse(
-    EmployeeDashboardResponse Staff,
-    int TotalClients,
-    int ActiveMemberships,
-    int PaymentsTodayCount,
-    long PaymentsTodayTotalAmount
+public record DashboardKpiItem(
+    string Id,
+    string Title,
+    decimal Value,
+    decimal PreviousValue,
+    decimal? ChangePercent,
+    string Direction,
+    string Unit,
+    bool IsNewGrowth
 );
 
-/// <summary>
-/// Строка журнала посещений для списка в дашборде.
-/// </summary>
-public record VisitLogListItemResponse(
-    int Id,
-    DateTime EnterDate,
-    DateTime? LeaveDate,
-    int MembershipId,
-    Guid ClientId,
-    string ClientLastName,
-    string ClientFirstName
+public record DashboardSeries(
+    IReadOnlyList<DashboardDayPoint> VisitsByDay,
+    IReadOnlyList<DashboardRevenueDayPoint> RevenueByDay,
+    IReadOnlyList<DashboardDayPoint> NewClientsByDay,
+    IReadOnlyList<DashboardMembershipPlanPoint> MembershipsByPlan
 );
 
-public record PagedVisitLogsResponse(
-    int Page,
-    int PageSize,
-    int TotalCount,
-    IReadOnlyList<VisitLogListItemResponse> Items
-);
+public record DashboardDayPoint(DateOnly Date, int Value);
 
-/// <summary>
-/// Абонемент в списке дашборда с данными клиента и тарифа.
-/// </summary>
-public record MembershipListItemResponse(
-    int Id,
-    int PlanId,
-    string PlanName,
-    Guid ClientId,
-    string ClientLastName,
-    string ClientFirstName,
-    MembershipStatus Status,
-    DateTime ActivatedDate,
-    DateTime ExpireDate
-);
+public record DashboardRevenueDayPoint(DateOnly Date, long Amount);
 
-public record PagedMembershipsResponse(
-    int Page,
-    int PageSize,
-    int TotalCount,
-    IReadOnlyList<MembershipListItemResponse> Items
-);
+public record DashboardMembershipPlanPoint(int PlanId, string PlanName, int Count, decimal SharePercent);

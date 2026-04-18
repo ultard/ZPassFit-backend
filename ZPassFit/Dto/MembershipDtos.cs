@@ -66,3 +66,22 @@ public record UpdateMembershipRequest(
     DateTime? ActivatedDate,
     DateTime? ExpireDate
 );
+
+public record MembershipListItemResponse(
+    int Id,
+    int PlanId,
+    string PlanName,
+    Guid ClientId,
+    string ClientLastName,
+    string ClientFirstName,
+    MembershipStatus Status,
+    DateTime ActivatedDate,
+    DateTime ExpireDate
+);
+
+public record PagedMembershipsResponse(
+    int Page,
+    int PageSize,
+    int TotalCount,
+    IReadOnlyList<MembershipListItemResponse> Items
+);

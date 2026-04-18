@@ -1,4 +1,5 @@
 using ZPassFit.Data.Models.Attendance;
+using ZPassFit.Data.Repositories;
 
 namespace ZPassFit.Data.Repositories.Attendance;
 
@@ -12,7 +13,13 @@ public interface IVisitLogRepository
 
     Task<int> CountVisitsEnteringBetweenAsync(DateTime fromUtcInclusive, DateTime toUtcExclusive);
     Task<int> CountOpenVisitsAsync();
-    Task<IReadOnlyList<VisitLog>> GetRecentVisitsWithClientAsync(int take);
+
+    Task<IReadOnlyList<ClubDayCountRow>> GetVisitCountsByClubDayAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        string timeZoneId,
+        CancellationToken cancellationToken = default
+    );
 
     Task<(IReadOnlyList<VisitLog> Items, int TotalCount)> GetPagedAsync(
         DateTime? enterFromUtc,

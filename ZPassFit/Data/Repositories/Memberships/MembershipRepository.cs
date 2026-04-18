@@ -53,6 +53,36 @@ public class MembershipRepository(ApplicationDbContext context) : IMembershipRep
         return await context.Memberships.CountAsync(m => m.PlanId == planId, cancellationToken);
     }
 
+    public async Task<int> CountActivatedBetweenAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await context.Memberships.CountAsync(
+            m => m.ActivatedDate >= fromUtcInclusive && m.ActivatedDate < toUtcExclusive,
+            cancellationToken
+        );
+    }
+
+    public async Task<IReadOnlyList<MembershipPlanActivationCount>> CountActivationsByPlanBetweenAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var rows = await (
+            from m in context.Memberships.AsNoTracking()
+            join p in context.MembershipPlans.AsNoTracking() on m.PlanId equals p.Id
+            where m.ActivatedDate >= fromUtcInclusive && m.ActivatedDate < toUtcExclusive
+            group m by new { m.PlanId, p.Name } into g
+            orderby g.Count() descending
+            select new MembershipPlanActivationCount(g.Key.PlanId, g.Key.Name, g.Count())
+        ).ToListAsync(cancellationToken);
+
+        return rows;
+    }
+
     public async Task<(IReadOnlyList<Membership> Items, int TotalCount)> GetPagedAsync(
         MembershipStatus? status,
         string? search,

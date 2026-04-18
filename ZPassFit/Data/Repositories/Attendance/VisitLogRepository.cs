@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ZPassFit.Data.Models.Attendance;
+using ZPassFit.Data.Repositories;
 
 namespace ZPassFit.Data.Repositories.Attendance;
 
@@ -48,13 +49,24 @@ public class VisitLogRepository(ApplicationDbContext context) : IVisitLogReposit
         return await context.VisitLogs.CountAsync(v => v.LeaveDate == null);
     }
 
-    public async Task<IReadOnlyList<VisitLog>> GetRecentVisitsWithClientAsync(int take)
+    public async Task<IReadOnlyList<ClubDayCountRow>> GetVisitCountsByClubDayAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        string timeZoneId,
+        CancellationToken cancellationToken = default
+    )
     {
-        return await context.VisitLogs
-            .Include(v => v.Client)
-            .OrderByDescending(v => v.EnterDate)
-            .Take(take)
-            .ToListAsync();
+        return await context.Database
+            .SqlQuery<ClubDayCountRow>(
+                $"""
+                 SELECT date(timezone({timeZoneId}, v."EnterDate")) AS "Date", COUNT(*)::int AS "Count"
+                 FROM "VisitLogs" AS v
+                 WHERE v."EnterDate" >= {fromUtcInclusive} AND v."EnterDate" < {toUtcExclusive}
+                 GROUP BY date(timezone({timeZoneId}, v."EnterDate"))
+                 ORDER BY date(timezone({timeZoneId}, v."EnterDate"))
+                 """
+            )
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<VisitLog?> GetByIdAsync(int id, CancellationToken cancellationToken = default)

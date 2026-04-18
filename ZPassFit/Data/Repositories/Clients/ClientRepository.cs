@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ZPassFit.Data.Models.Clients;
+using ZPassFit.Data.Repositories;
 
 namespace ZPassFit.Data.Repositories.Clients;
 
@@ -46,6 +47,38 @@ public class ClientRepository(ApplicationDbContext context) : IClientRepository
     public async Task<int> CountAsync()
     {
         return await context.Clients.CountAsync();
+    }
+
+    public async Task<int> CountRegisteredBetweenAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await context.Clients.CountAsync(
+            c => c.RegistrationDate >= fromUtcInclusive && c.RegistrationDate < toUtcExclusive,
+            cancellationToken
+        );
+    }
+
+    public async Task<IReadOnlyList<ClubDayCountRow>> GetRegistrationCountsByClubDayAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        string timeZoneId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await context.Database
+            .SqlQuery<ClubDayCountRow>(
+                $"""
+                 SELECT date(timezone({timeZoneId}, c."RegistrationDate")) AS "Date", COUNT(*)::int AS "Count"
+                 FROM "Clients" AS c
+                 WHERE c."RegistrationDate" >= {fromUtcInclusive} AND c."RegistrationDate" < {toUtcExclusive}
+                 GROUP BY date(timezone({timeZoneId}, c."RegistrationDate"))
+                 ORDER BY date(timezone({timeZoneId}, c."RegistrationDate"))
+                 """
+            )
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<(IReadOnlyList<Client> Items, int TotalCount)> SearchPagedAsync(

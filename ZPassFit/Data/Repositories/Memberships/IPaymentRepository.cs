@@ -1,4 +1,5 @@
 using ZPassFit.Data.Models.Memberships;
+using ZPassFit.Data.Repositories;
 
 namespace ZPassFit.Data.Repositories.Memberships;
 
@@ -13,5 +14,12 @@ public interface IPaymentRepository
     Task<(int Count, long TotalAmount)> GetCompletedPaymentsSummaryBetweenAsync(
         DateTime fromUtcInclusive,
         DateTime toUtcExclusive
+    );
+
+    Task<IReadOnlyList<ClubDayRevenueRow>> GetCompletedPaymentAmountsByClubDayAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        string timeZoneId,
+        CancellationToken cancellationToken = default
     );
 }

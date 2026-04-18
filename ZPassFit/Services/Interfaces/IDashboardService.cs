@@ -4,7 +4,9 @@ namespace ZPassFit.Services.Interfaces;
 
 public interface IDashboardService
 {
-    Task<EmployeeDashboardResponse> GetEmployeeDashboardAsync(CancellationToken cancellationToken = default);
-
-    Task<AdminDashboardResponse> GetAdminDashboardAsync(CancellationToken cancellationToken = default);
+    Task<DashboardOverviewResponse> GetOverviewAsync(
+        int? year,
+        int? month,
+        CancellationToken cancellationToken = default
+    );
 }

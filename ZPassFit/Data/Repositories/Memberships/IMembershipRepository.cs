@@ -12,6 +12,18 @@ public interface IMembershipRepository
     Task<int> CountActiveAsync(DateTime utcNow);
     Task<int> CountByPlanIdAsync(int planId, CancellationToken cancellationToken = default);
 
+    Task<int> CountActivatedBetweenAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        CancellationToken cancellationToken = default
+    );
+
+    Task<IReadOnlyList<MembershipPlanActivationCount>> CountActivationsByPlanBetweenAsync(
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        CancellationToken cancellationToken = default
+    );
+
     Task<(IReadOnlyList<Membership> Items, int TotalCount)> GetPagedAsync(
         MembershipStatus? status,
         string? search,
@@ -20,3 +32,5 @@ public interface IMembershipRepository
         CancellationToken cancellationToken = default
     );
 }
+
+public record MembershipPlanActivationCount(int PlanId, string PlanName, int Count);

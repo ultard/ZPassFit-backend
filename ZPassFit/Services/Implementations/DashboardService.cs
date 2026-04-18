@@ -1,4 +1,7 @@
-using ZPassFit.Data.Models.Attendance;
+using System.Globalization;
+using Microsoft.Extensions.Options;
+using ZPassFit.Dashboard;
+using ZPassFit.Data.Repositories;
 using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Memberships;
@@ -8,71 +11,349 @@ using ZPassFit.Services.Interfaces;
 namespace ZPassFit.Services.Implementations;
 
 public class DashboardService(
+    IOptions<DashboardOptions> dashboardOptions,
     IVisitLogRepository visitLogRepository,
-    IQrSessionRepository qrSessionRepository,
+    IPaymentRepository paymentRepository,
     IClientRepository clientRepository,
-    IMembershipRepository membershipRepository,
-    IPaymentRepository paymentRepository
+    IMembershipRepository membershipRepository
 ) : IDashboardService
 {
-    private const int RecentCheckInsTake = 20;
+    /// <summary>Относительное изменение ниже этого порога считаем «без изменений» для стрелки направления.</summary>
+    private const decimal DirectionFlatPercentThreshold = 0.05m;
 
-    public async Task<EmployeeDashboardResponse> GetEmployeeDashboardAsync(
+    public async Task<DashboardOverviewResponse> GetOverviewAsync(
+        int? year,
+        int? month,
         CancellationToken cancellationToken = default
     )
     {
+        var options = dashboardOptions.Value;
+        var clubTimeZone = DashboardPeriodCalculator.ResolveTimeZone(options.TimeZoneId);
         var utcNow = DateTime.UtcNow;
-        var (dayStart, dayEnd) = GetUtcDayRange(utcNow);
 
-        var visitsToday = await visitLogRepository.CountVisitsEnteringBetweenAsync(dayStart, dayEnd);
-        var inClub = await visitLogRepository.CountOpenVisitsAsync();
-        var qrActive = await qrSessionRepository.CountActiveAsync(utcNow);
-        var recentLogs = await visitLogRepository.GetRecentVisitsWithClientAsync(RecentCheckInsTake);
-
-        var recent = recentLogs.Select(MapRecentCheckIn).ToList();
-
-        return new EmployeeDashboardResponse(
-            dayStart,
-            dayEnd,
-            visitsToday,
-            inClub,
-            qrActive,
-            recent
+        var (selectedYear, selectedMonth) = DashboardPeriodCalculator.ResolveTargetMonth(
+            clubTimeZone,
+            utcNow,
+            year,
+            month
         );
+
+        var (selectedMonthStartUtc, selectedMonthEndUtcExclusive) =
+            DashboardPeriodCalculator.GetMonthUtcRange(clubTimeZone, selectedYear, selectedMonth);
+
+        var (previousMonthStartUtc, previousMonthEndUtcExclusive) =
+            DashboardPeriodCalculator.GetPreviousMonthUtcRange(clubTimeZone, selectedYear, selectedMonth);
+
+        var kpiData = await LoadKpiDataAsync(
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive,
+            previousMonthStartUtc,
+            previousMonthEndUtcExclusive,
+            cancellationToken
+        );
+
+        var kpis = new[]
+        {
+            BuildKpi("visits", "Визиты", kpiData.VisitsSelectedMonth, kpiData.VisitsPreviousMonth, "visits"),
+            BuildKpi(
+                "revenue",
+                "Выручка",
+                kpiData.PaymentsSelectedMonth.TotalAmount,
+                kpiData.PaymentsPreviousMonth.TotalAmount,
+                "currency"
+            ),
+            BuildKpi(
+                "newClients",
+                "Новые клиенты",
+                kpiData.NewClientsSelectedMonth,
+                kpiData.NewClientsPreviousMonth,
+                "count"
+            ),
+            BuildKpi(
+                "newMemberships",
+                "Новые абонементы",
+                kpiData.MembershipActivationsSelectedMonth,
+                kpiData.MembershipActivationsPreviousMonth,
+                "count"
+            )
+        };
+
+        var chartSource = await LoadChartSourceDataAsync(
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive,
+            options.TimeZoneId,
+            cancellationToken
+        );
+
+        var visitCountByLocalDay = chartSource.VisitCountsByLocalDay.ToDictionary(row => row.Date, row => row.Count);
+        var newClientCountByLocalDay = chartSource.NewClientCountsByLocalDay.ToDictionary(
+            row => row.Date,
+            row => row.Count
+        );
+        var paymentAmountByLocalDay = chartSource.PaymentAmountsByLocalDay.ToDictionary(
+            row => row.Date,
+            row => row.TotalAmount
+        );
+        var membershipActivationsByPlan = chartSource.MembershipActivationsByPlan;
+
+        var russianCulture = CultureInfo.GetCultureInfo("ru-RU");
+        var monthNameTitleCase = russianCulture.TextInfo.ToTitleCase(
+            russianCulture.DateTimeFormat.GetMonthName(selectedMonth)
+        );
+        var periodLabel = $"{monthNameTitleCase} {selectedYear}";
+
+        var totalPlanActivations = membershipActivationsByPlan.Sum(row => row.Count);
+
+        var membershipsByPlanChart = membershipActivationsByPlan
+            .Select(row => new DashboardMembershipPlanPoint(
+                row.PlanId,
+                row.PlanName,
+                row.Count,
+                totalPlanActivations == 0
+                    ? 0
+                    : Math.Round(row.Count * 100m / totalPlanActivations, 1, MidpointRounding.AwayFromZero)
+            ))
+            .ToList();
+
+        var series = new DashboardSeries(
+            BuildDailyCountSeries(selectedYear, selectedMonth, visitCountByLocalDay),
+            BuildDailyRevenueSeries(selectedYear, selectedMonth, paymentAmountByLocalDay),
+            BuildDailyCountSeries(selectedYear, selectedMonth, newClientCountByLocalDay),
+            membershipsByPlanChart
+        );
+
+        var periodMeta = new DashboardPeriodMeta(
+            options.TimeZoneId,
+            selectedYear,
+            selectedMonth,
+            periodLabel,
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive,
+            previousMonthStartUtc,
+            previousMonthEndUtcExclusive
+        );
+
+        return new DashboardOverviewResponse(periodMeta, kpis, series);
     }
 
-    public async Task<AdminDashboardResponse> GetAdminDashboardAsync(
-        CancellationToken cancellationToken = default
+    private sealed record DashboardKpiData(
+        int VisitsSelectedMonth,
+        int VisitsPreviousMonth,
+        (int Count, long TotalAmount) PaymentsSelectedMonth,
+        (int Count, long TotalAmount) PaymentsPreviousMonth,
+        int NewClientsSelectedMonth,
+        int NewClientsPreviousMonth,
+        int MembershipActivationsSelectedMonth,
+        int MembershipActivationsPreviousMonth
+    );
+
+    private sealed record DashboardChartSourceData(
+        IReadOnlyList<ClubDayCountRow> VisitCountsByLocalDay,
+        IReadOnlyList<ClubDayRevenueRow> PaymentAmountsByLocalDay,
+        IReadOnlyList<ClubDayCountRow> NewClientCountsByLocalDay,
+        IReadOnlyList<MembershipPlanActivationCount> MembershipActivationsByPlan
+    );
+
+    private async Task<DashboardKpiData> LoadKpiDataAsync(
+        DateTime selectedMonthStartUtc,
+        DateTime selectedMonthEndUtcExclusive,
+        DateTime previousMonthStartUtc,
+        DateTime previousMonthEndUtcExclusive,
+        CancellationToken cancellationToken
     )
     {
-        var staff = await GetEmployeeDashboardAsync(cancellationToken);
-        var utcNow = DateTime.UtcNow;
-        var (dayStart, dayEnd) = GetUtcDayRange(utcNow);
+        var visitsSelected = visitLogRepository.CountVisitsEnteringBetweenAsync(
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive
+        );
+        var visitsPrevious = visitLogRepository.CountVisitsEnteringBetweenAsync(
+            previousMonthStartUtc,
+            previousMonthEndUtcExclusive
+        );
 
-        var totalClients = await clientRepository.CountAsync();
-        var activeMemberships = await membershipRepository.CountActiveAsync(utcNow);
-        var (paymentsCount, paymentsTotal) =
-            await paymentRepository.GetCompletedPaymentsSummaryBetweenAsync(dayStart, dayEnd);
+        var paymentsSelected = paymentRepository.GetCompletedPaymentsSummaryBetweenAsync(
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive
+        );
+        var paymentsPrevious = paymentRepository.GetCompletedPaymentsSummaryBetweenAsync(
+            previousMonthStartUtc,
+            previousMonthEndUtcExclusive
+        );
 
-        return new AdminDashboardResponse(
-            staff,
-            totalClients,
-            activeMemberships,
-            paymentsCount,
-            paymentsTotal
+        var newClientsSelected = clientRepository.CountRegisteredBetweenAsync(
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive,
+            cancellationToken
+        );
+        var newClientsPrevious = clientRepository.CountRegisteredBetweenAsync(
+            previousMonthStartUtc,
+            previousMonthEndUtcExclusive,
+            cancellationToken
+        );
+
+        var membershipsSelected = membershipRepository.CountActivatedBetweenAsync(
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive,
+            cancellationToken
+        );
+        var membershipsPrevious = membershipRepository.CountActivatedBetweenAsync(
+            previousMonthStartUtc,
+            previousMonthEndUtcExclusive,
+            cancellationToken
+        );
+
+        await Task.WhenAll(
+            visitsSelected,
+            visitsPrevious,
+            paymentsSelected,
+            paymentsPrevious,
+            newClientsSelected,
+            newClientsPrevious,
+            membershipsSelected,
+            membershipsPrevious
+        );
+
+        return new DashboardKpiData(
+            await visitsSelected,
+            await visitsPrevious,
+            await paymentsSelected,
+            await paymentsPrevious,
+            await newClientsSelected,
+            await newClientsPrevious,
+            await membershipsSelected,
+            await membershipsPrevious
         );
     }
 
-    private static (DateTime Start, DateTime End) GetUtcDayRange(DateTime utcNow)
+    private async Task<DashboardChartSourceData> LoadChartSourceDataAsync(
+        DateTime selectedMonthStartUtc,
+        DateTime selectedMonthEndUtcExclusive,
+        string timeZoneId,
+        CancellationToken cancellationToken
+    )
     {
-        var start = utcNow.Date;
-        return (start, start.AddDays(1));
+        var visitCounts = visitLogRepository.GetVisitCountsByClubDayAsync(
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive,
+            timeZoneId,
+            cancellationToken
+        );
+        var paymentAmounts = paymentRepository.GetCompletedPaymentAmountsByClubDayAsync(
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive,
+            timeZoneId,
+            cancellationToken
+        );
+        var newClientCounts = clientRepository.GetRegistrationCountsByClubDayAsync(
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive,
+            timeZoneId,
+            cancellationToken
+        );
+        var activationsByPlan = membershipRepository.CountActivationsByPlanBetweenAsync(
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive,
+            cancellationToken
+        );
+
+        await Task.WhenAll(visitCounts, paymentAmounts, newClientCounts, activationsByPlan);
+
+        return new DashboardChartSourceData(
+            await visitCounts,
+            await paymentAmounts,
+            await newClientCounts,
+            await activationsByPlan
+        );
     }
 
-    private static RecentCheckInItem MapRecentCheckIn(VisitLog v)
+    private static DashboardKpiItem BuildKpi(
+        string metricId,
+        string title,
+        decimal valueCurrentPeriod,
+        decimal valuePreviousPeriod,
+        string unit
+    )
     {
-        var c = v.Client;
-        var name = $"{c.LastName} {c.FirstName} {c.MiddleName}".Trim();
-        return new RecentCheckInItem(v.Id, v.ClientId, name, v.EnterDate);
+        decimal? changePercent;
+        var isGrowthFromZero = false;
+
+        switch (valuePreviousPeriod)
+        {
+            case 0 when valueCurrentPeriod == 0:
+                changePercent = 0;
+                break;
+            case 0:
+                changePercent = null;
+                isGrowthFromZero = valueCurrentPeriod > 0;
+                break;
+            default:
+                changePercent = Math.Round(
+                    (valueCurrentPeriod - valuePreviousPeriod) / valuePreviousPeriod * 100m,
+                    2,
+                    MidpointRounding.AwayFromZero
+                );
+                break;
+        }
+
+        var direction = ResolveTrendDirection(changePercent, valuePreviousPeriod, valueCurrentPeriod);
+
+        return new DashboardKpiItem(
+            metricId,
+            title,
+            valueCurrentPeriod,
+            valuePreviousPeriod,
+            changePercent,
+            direction,
+            unit,
+            isGrowthFromZero
+        );
+    }
+
+    private static string ResolveTrendDirection(
+        decimal? changePercent,
+        decimal valuePreviousPeriod,
+        decimal valueCurrentPeriod
+    )
+    {
+        if (valuePreviousPeriod == 0 && valueCurrentPeriod == 0)
+            return "flat";
+
+        if (valuePreviousPeriod == 0 && valueCurrentPeriod > 0)
+            return "up";
+
+        if (changePercent is null)
+            return "flat";
+
+        if (changePercent > DirectionFlatPercentThreshold)
+            return "up";
+
+        if (changePercent < -DirectionFlatPercentThreshold)
+            return "down";
+
+        return "flat";
+    }
+
+    private static List<DashboardDayPoint> BuildDailyCountSeries(
+        int year,
+        int month,
+        IReadOnlyDictionary<DateOnly, int> countByClubLocalDay
+    )
+    {
+        return DashboardPeriodCalculator
+            .EnumerateDaysInMonth(year, month)
+            .Select(day => new DashboardDayPoint(day, countByClubLocalDay.GetValueOrDefault(day)))
+            .ToList();
+    }
+
+    private static List<DashboardRevenueDayPoint> BuildDailyRevenueSeries(
+        int year,
+        int month,
+        IReadOnlyDictionary<DateOnly, long> amountByClubLocalDay
+    )
+    {
+        return DashboardPeriodCalculator
+            .EnumerateDaysInMonth(year, month)
+            .Select(day => new DashboardRevenueDayPoint(day, amountByClubLocalDay.GetValueOrDefault(day)))
+            .ToList();
     }
 }
