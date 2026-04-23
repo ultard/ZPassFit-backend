@@ -35,7 +35,6 @@ public class AuthController(
         };
 
         var result = await userManager.CreateAsync(user, request.Password);
-
         if (!result.Succeeded) return Results.BadRequest(result.Errors);
 
         var addRole = await userManager.AddToRoleAsync(user, Roles.Client);
@@ -55,7 +54,6 @@ public class AuthController(
         };
 
         await clientRepository.AddAsync(client);
-
         return Results.Created("/auth/login", new RegisterResponse("Pending"));
     }
 

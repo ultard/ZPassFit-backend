@@ -4,9 +4,9 @@ namespace ZPassFit.Data.Repositories.Clients;
 
 public interface IClientLevelRepository
 {
-    Task<ClientLevel?> GetByIdAsync(int id);
+    Task<ClientLevel?> GetByIdAsync(Guid id);
     Task<ClientLevel?> GetActiveByClientIdAsync(Guid clientId);
     Task AddAsync(ClientLevel clientLevel);
     Task UpdateAsync(ClientLevel clientLevel);
-    Task DeleteAsync(int id);
+    Task DeleteAsync(Guid id);
 }

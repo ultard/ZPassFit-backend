@@ -59,13 +59,13 @@ public class DashboardBonusesController(IBonusTransactionRepository bonusTransac
         return Results.Ok(new PagedBonusTransactionsResponse(page, pageSize, total, mapped));
     }
 
-    [HttpGet("{id:int}")]
+    [HttpGet("{id:guid}")]
     [EndpointSummary("Транзакция бонусов по ID")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BonusTransactionListItemResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetById([FromRoute] int id, CancellationToken cancellationToken = default)
+    public async Task<IResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken = default)
     {
         var row = await bonusTransactionRepository.GetByIdAsync(id);
         return row == null ? Results.NotFound() : Results.Ok(MapListItem(row));

@@ -108,6 +108,7 @@ public class ClientServiceTests
         var userId = "u1";
         var levelId = Guid.NewGuid();
         var prevId = Guid.NewGuid();
+        var clientLevelId = Guid.NewGuid();
         var client = new Client
         {
             Id = Guid.NewGuid(),
@@ -123,7 +124,7 @@ public class ClientServiceTests
 
         var clientLevel = new ClientLevel
         {
-            Id = 42,
+            Id = clientLevelId,
             ClientId = client.Id,
             LevelId = levelId,
             ReceiveDate = new DateTime(2025, 6, 1, 12, 0, 0, DateTimeKind.Utc),
@@ -152,7 +153,7 @@ public class ClientServiceTests
         var result = await clientService.GetMyActiveLevelAsync(userId);
 
         Assert.NotNull(result);
-        Assert.Equal(42, result!.ClientLevelId);
+        Assert.Equal(clientLevelId, result!.ClientLevelId);
         Assert.Equal(clientLevel.ReceiveDate, result.ReceiveDate);
         Assert.Equal(levelId, result.Level.Id);
         Assert.Equal("Gold", result.Level.Name);

@@ -4,7 +4,7 @@ public class ClientLevel
 {
     public DateTime ReceiveDate = DateTime.UtcNow;
     public DateTime? RevocationDate;
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     public Guid ClientId { get; set; }
     public Guid LevelId { get; set; }

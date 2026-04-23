@@ -137,6 +137,8 @@ public class AttendanceServiceTests
         var visitLogRepositoryMock = Mock.Get(visitRepo);
 
         var clientId = Guid.NewGuid();
+        var visitId = Guid.NewGuid();
+        var membershipId = Guid.NewGuid();
         var qrSession = new QrSession
         {
             Token = token,
@@ -147,9 +149,9 @@ public class AttendanceServiceTests
 
         var openVisitLog = new VisitLog
         {
-            Id = 10,
+            Id = visitId,
             ClientId = clientId,
-            MembershipId = 99,
+            MembershipId = membershipId,
             EnterDate = DateTime.UtcNow.AddMinutes(-30),
             LeaveDate = null
         };
@@ -159,9 +161,9 @@ public class AttendanceServiceTests
         visitLogRepositoryMock.Setup(r => r.GetOpenVisitByClientIdAsync(clientId)).ReturnsAsync(openVisitLog);
 
         var result = await attendanceService.CheckInByTokenAsync(token);
-        Assert.Equal(10, result.Id);
+        Assert.Equal(visitId, result.Id);
         Assert.Equal(clientId, result.ClientId);
-        Assert.Equal(99, result.MembershipId);
+        Assert.Equal(membershipId, result.MembershipId);
         Assert.Null(result.LeaveDate);
 
         visitLogRepositoryMock.VerifyAll();
@@ -193,9 +195,9 @@ public class AttendanceServiceTests
 
         var membership = new Membership
         {
-            Id = 77,
+            Id = Guid.NewGuid(),
             ClientId = clientId,
-            PlanId = 1,
+            PlanId = Guid.NewGuid(),
             Status = MembershipStatus.Active,
             ActivatedDate = DateTime.UtcNow.AddDays(-1),
             ExpireDate = DateTime.UtcNow.AddDays(29)
@@ -219,13 +221,13 @@ public class AttendanceServiceTests
 
         Assert.NotNull(createdVisitLog);
         Assert.Equal(clientId, createdVisitLog!.ClientId);
-        Assert.Equal(77, createdVisitLog.MembershipId);
+        Assert.Equal(membership.Id, createdVisitLog.MembershipId);
         Assert.True(createdVisitLog.EnterDate >= before.AddSeconds(-5) &&
                     createdVisitLog.EnterDate <= after.AddSeconds(5));
         Assert.Null(createdVisitLog.LeaveDate);
 
         Assert.Equal(clientId, result.ClientId);
-        Assert.Equal(77, result.MembershipId);
+        Assert.Equal(membership.Id, result.MembershipId);
         Assert.Null(result.LeaveDate);
 
         membershipRepositoryMock.VerifyAll();
@@ -245,6 +247,8 @@ public class AttendanceServiceTests
         var clientRepositoryMock = Mock.Get(clientRepo);
         var visitLogRepositoryMock = Mock.Get(visitRepo);
 
+        var visitId = Guid.NewGuid();
+        var membershipId = Guid.NewGuid();
         var client = new Client
         {
             Id = Guid.NewGuid(),
@@ -282,6 +286,8 @@ public class AttendanceServiceTests
         var clientRepositoryMock = Mock.Get(clientRepo);
         var visitLogRepositoryMock = Mock.Get(visitRepo);
 
+        var visitId = Guid.NewGuid();
+        var membershipId = Guid.NewGuid();
         var client = new Client
         {
             Id = Guid.NewGuid(),
@@ -297,9 +303,9 @@ public class AttendanceServiceTests
 
         var openVisitLog = new VisitLog
         {
-            Id = 55,
+            Id = visitId,
             ClientId = client.Id,
-            MembershipId = 77,
+            MembershipId = membershipId,
             EnterDate = DateTime.UtcNow.AddMinutes(-30),
             LeaveDate = null
         };
@@ -315,7 +321,7 @@ public class AttendanceServiceTests
 
         Assert.NotNull(openVisitLog.LeaveDate);
         Assert.True(openVisitLog.LeaveDate >= before.AddSeconds(-5) && openVisitLog.LeaveDate <= after.AddSeconds(5));
-        Assert.Equal(55, result.Id);
+        Assert.Equal(visitId, result.Id);
         Assert.NotNull(result.LeaveDate);
 
         clientRepositoryMock.VerifyAll();

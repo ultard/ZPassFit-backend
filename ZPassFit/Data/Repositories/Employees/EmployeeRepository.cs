@@ -5,7 +5,7 @@ namespace ZPassFit.Data.Repositories.Employees;
 
 public class EmployeeRepository(ApplicationDbContext context) : IEmployeeRepository
 {
-    public async Task<Employee?> GetByIdAsync(int id)
+    public async Task<Employee?> GetByIdAsync(Guid id)
     {
         return await context.Employees
             .Include(e => e.User)
@@ -24,7 +24,7 @@ public class EmployeeRepository(ApplicationDbContext context) : IEmployeeReposit
         await context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(Guid id)
     {
         var employee = await GetByIdAsync(id);
         if (employee == null) return;

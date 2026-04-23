@@ -39,4 +39,4 @@ public record DashboardDayPoint(DateOnly Date, int Value);
 
 public record DashboardRevenueDayPoint(DateOnly Date, long Amount);
 
-public record DashboardMembershipPlanPoint(int PlanId, string PlanName, int Count, decimal SharePercent);
+public record DashboardMembershipPlanPoint(Guid PlanId, string PlanName, int Count, decimal SharePercent);

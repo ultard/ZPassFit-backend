@@ -25,7 +25,7 @@ public class DashboardClientsController(IClientService clientService) : Controll
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IResult> List(
-        [FromQuery] string? q,
+        [FromQuery] string? search,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default
@@ -41,7 +41,7 @@ public class DashboardClientsController(IClientService clientService) : Controll
             );
         }
 
-        var data = await clientService.SearchPagedAsync(q, page, pageSize, cancellationToken);
+        var data = await clientService.SearchPagedAsync(search, page, pageSize, cancellationToken);
         return Results.Ok(data);
     }
 

@@ -162,47 +162,47 @@ public class DashboardService(
         CancellationToken cancellationToken
     )
     {
-        var visitsSelected = visitLogRepository.CountVisitsEnteringBetweenAsync(
+        var visitsSelected = await visitLogRepository.CountVisitsEnteringBetweenAsync(
             selectedMonthStartUtc,
             selectedMonthEndUtcExclusive
         );
-        var visitsPrevious = visitLogRepository.CountVisitsEnteringBetweenAsync(
+        var visitsPrevious = await visitLogRepository.CountVisitsEnteringBetweenAsync(
             previousMonthStartUtc,
             previousMonthEndUtcExclusive
         );
 
-        var paymentsSelected = paymentRepository.GetCompletedPaymentsSummaryBetweenAsync(
+        var paymentsSelected = await paymentRepository.GetCompletedPaymentsSummaryBetweenAsync(
             selectedMonthStartUtc,
             selectedMonthEndUtcExclusive
         );
-        var paymentsPrevious = paymentRepository.GetCompletedPaymentsSummaryBetweenAsync(
+        var paymentsPrevious = await paymentRepository.GetCompletedPaymentsSummaryBetweenAsync(
             previousMonthStartUtc,
             previousMonthEndUtcExclusive
         );
 
-        var newClientsSelected = clientRepository.CountRegisteredBetweenAsync(
+        var newClientsSelected = await clientRepository.CountRegisteredBetweenAsync(
             selectedMonthStartUtc,
             selectedMonthEndUtcExclusive,
             cancellationToken
         );
-        var newClientsPrevious = clientRepository.CountRegisteredBetweenAsync(
+        var newClientsPrevious = await clientRepository.CountRegisteredBetweenAsync(
             previousMonthStartUtc,
             previousMonthEndUtcExclusive,
             cancellationToken
         );
 
-        var membershipsSelected = membershipRepository.CountActivatedBetweenAsync(
+        var membershipsSelected = await membershipRepository.CountActivatedBetweenAsync(
             selectedMonthStartUtc,
             selectedMonthEndUtcExclusive,
             cancellationToken
         );
-        var membershipsPrevious = membershipRepository.CountActivatedBetweenAsync(
+        var membershipsPrevious = await membershipRepository.CountActivatedBetweenAsync(
             previousMonthStartUtc,
             previousMonthEndUtcExclusive,
             cancellationToken
         );
 
-        await Task.WhenAll(
+        return new DashboardKpiData(
             visitsSelected,
             visitsPrevious,
             paymentsSelected,
@@ -211,17 +211,6 @@ public class DashboardService(
             newClientsPrevious,
             membershipsSelected,
             membershipsPrevious
-        );
-
-        return new DashboardKpiData(
-            await visitsSelected,
-            await visitsPrevious,
-            await paymentsSelected,
-            await paymentsPrevious,
-            await newClientsSelected,
-            await newClientsPrevious,
-            await membershipsSelected,
-            await membershipsPrevious
         );
     }
 
@@ -232,37 +221,36 @@ public class DashboardService(
         CancellationToken cancellationToken
     )
     {
-        var visitCounts = visitLogRepository.GetVisitCountsByClubDayAsync(
+        // See note in LoadKpiDataAsync about DbContext concurrency.
+        var visitCounts = await visitLogRepository.GetVisitCountsByClubDayAsync(
             selectedMonthStartUtc,
             selectedMonthEndUtcExclusive,
             timeZoneId,
             cancellationToken
         );
-        var paymentAmounts = paymentRepository.GetCompletedPaymentAmountsByClubDayAsync(
+        var paymentAmounts = await paymentRepository.GetCompletedPaymentAmountsByClubDayAsync(
             selectedMonthStartUtc,
             selectedMonthEndUtcExclusive,
             timeZoneId,
             cancellationToken
         );
-        var newClientCounts = clientRepository.GetRegistrationCountsByClubDayAsync(
+        var newClientCounts = await clientRepository.GetRegistrationCountsByClubDayAsync(
             selectedMonthStartUtc,
             selectedMonthEndUtcExclusive,
             timeZoneId,
             cancellationToken
         );
-        var activationsByPlan = membershipRepository.CountActivationsByPlanBetweenAsync(
+        var activationsByPlan = await membershipRepository.CountActivationsByPlanBetweenAsync(
             selectedMonthStartUtc,
             selectedMonthEndUtcExclusive,
             cancellationToken
         );
-
-        await Task.WhenAll(visitCounts, paymentAmounts, newClientCounts, activationsByPlan);
 
         return new DashboardChartSourceData(
-            await visitCounts,
-            await paymentAmounts,
-            await newClientCounts,
-            await activationsByPlan
+            visitCounts,
+            paymentAmounts,
+            newClientCounts,
+            activationsByPlan
         );
     }
 

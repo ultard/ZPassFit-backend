@@ -5,7 +5,7 @@ namespace ZPassFit.Data.Repositories.Memberships;
 
 public class MembershipPlanRepository(ApplicationDbContext context) : IMembershipPlanRepository
 {
-    public async Task<MembershipPlan?> GetByIdAsync(int id)
+    public async Task<MembershipPlan?> GetByIdAsync(Guid id)
     {
         return await context.MembershipPlans.FirstOrDefaultAsync(p => p.Id == id);
     }
@@ -29,7 +29,7 @@ public class MembershipPlanRepository(ApplicationDbContext context) : IMembershi
         await context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(Guid id)
     {
         var plan = await GetByIdAsync(id);
         if (plan == null) return;

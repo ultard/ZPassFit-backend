@@ -43,7 +43,7 @@ public record PagedClientsResponse(
 /// Активный уровень лояльности текущего клиента.
 /// </summary>
 public record MyClientLevelResponse(
-    int ClientLevelId,
+    Guid ClientLevelId,
     DateTime ReceiveDate,
     LevelResponse Level
 );

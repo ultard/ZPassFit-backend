@@ -61,14 +61,14 @@ public class DashboardVisitsController(IVisitLogRepository visitLogRepository) :
         return Results.Ok(new PagedVisitLogsResponse(page, pageSize, total, mapped));
     }
 
-    [HttpGet("{id:int}")]
+    [HttpGet("{id:guid}")]
     [EndpointSummary("Посещение по ID")]
     [EndpointDescription("Запись журнала посещений для карточки в дашборде.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(VisitLogResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetById([FromRoute] int id, CancellationToken cancellationToken = default)
+    public async Task<IResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken = default)
     {
         var visit = await visitLogRepository.GetByIdAsync(id, cancellationToken);
         return visit == null

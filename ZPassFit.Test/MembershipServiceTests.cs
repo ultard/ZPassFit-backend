@@ -18,11 +18,12 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var planId = Guid.NewGuid();
         var membershipPlanRepositoryMock = Mock.Get(planRepo);
         membershipPlanRepositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync([
             new MembershipPlan
             {
-                Id = 1,
+                Id = planId,
                 Name = "Base",
                 Description = "Standard access",
                 Durations = [30, 90],
@@ -32,7 +33,7 @@ public class MembershipServiceTests
 
         var plans = (await membershipService.GetPlansAsync()).ToArray();
         Assert.Single(plans);
-        Assert.Equal(1, plans[0].Id);
+        Assert.Equal(planId, plans[0].Id);
         Assert.Equal("Base", plans[0].Name);
         Assert.Equal("Standard access", plans[0].Description);
         Assert.Equal([30, 90], plans[0].Durations);
@@ -70,7 +71,7 @@ public class MembershipServiceTests
         clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync((Client?)null);
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(1, 30, PaymentMethod.Cash)));
+            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(Guid.NewGuid(), 30, PaymentMethod.Cash)));
 
         Assert.Equal("Client profile not found.", exception.Message);
         clientRepositoryMock.VerifyAll();
@@ -85,6 +86,7 @@ public class MembershipServiceTests
     )
     {
         var userId = "u1";
+        var planId = Guid.NewGuid();
         var clientRepositoryMock = Mock.Get(clientRepo);
         var membershipPlanRepositoryMock = Mock.Get(planRepo);
 
@@ -103,10 +105,10 @@ public class MembershipServiceTests
 
         clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
 
-        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((MembershipPlan?)null);
+        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync((MembershipPlan?)null);
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(1, 30, PaymentMethod.Card)));
+            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(planId, 30, PaymentMethod.Card)));
 
         Assert.Equal("Membership plan not found.", exception.Message);
         clientRepositoryMock.VerifyAll();
@@ -122,6 +124,7 @@ public class MembershipServiceTests
     )
     {
         var userId = "u1";
+        var planId = Guid.NewGuid();
         var clientRepositoryMock = Mock.Get(clientRepo);
         var membershipPlanRepositoryMock = Mock.Get(planRepo);
 
@@ -140,13 +143,13 @@ public class MembershipServiceTests
 
         clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
 
-        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new MembershipPlan
+        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync(new MembershipPlan
         {
-            Id = 1, Name = "Base", Description = "Standard access", Durations = [30, 90], Price = 1000
+            Id = planId, Name = "Base", Description = "Standard access", Durations = [30, 90], Price = 1000
         });
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(1, 365, PaymentMethod.Card)));
+            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(planId, 365, PaymentMethod.Card)));
 
         Assert.Equal("Selected duration is not allowed for this plan.", exception.Message);
         clientRepositoryMock.VerifyAll();
@@ -183,11 +186,11 @@ public class MembershipServiceTests
         };
 
         var membershipPlan = new MembershipPlan
-            { Id = 7, Name = "Base", Description = "Standard access", Durations = [30], Price = 1500 };
+            { Id = Guid.NewGuid(), Name = "Base", Description = "Standard access", Durations = [30], Price = 1500 };
 
         clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
 
-        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(7)).ReturnsAsync(membershipPlan);
+        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(membershipPlan.Id)).ReturnsAsync(membershipPlan);
 
         membershipRepositoryMock.Setup(r => r.GetByClientIdAsync(client.Id)).ReturnsAsync((Membership?)null);
 
@@ -203,7 +206,10 @@ public class MembershipServiceTests
 
         var before = DateTime.UtcNow;
         var result =
-            await membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(7, 30, PaymentMethod.Cash));
+            await membershipService.BuyMembershipAsync(
+                userId,
+                new BuyMembershipRequest(membershipPlan.Id, 30, PaymentMethod.Cash)
+            );
         var after = DateTime.UtcNow;
 
         Assert.NotNull(addedMembership);
@@ -263,12 +269,12 @@ public class MembershipServiceTests
         };
 
         var membershipPlan = new MembershipPlan
-            { Id = 9, Name = "Pro", Description = "Unlimited access", Durations = [], Price = 2500 };
+            { Id = Guid.NewGuid(), Name = "Pro", Description = "Unlimited access", Durations = [], Price = 2500 };
         var existingMembership = new Membership
         {
-            Id = 123,
+            Id = Guid.NewGuid(),
             ClientId = client.Id,
-            PlanId = 1,
+            PlanId = Guid.NewGuid(),
             Status = MembershipStatus.Expired,
             ActivatedDate = new DateTime(2020, 1, 1),
             ExpireDate = new DateTime(2020, 2, 1)
@@ -276,17 +282,20 @@ public class MembershipServiceTests
 
         clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
 
-        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(9)).ReturnsAsync(membershipPlan);
+        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(membershipPlan.Id)).ReturnsAsync(membershipPlan);
 
         membershipRepositoryMock.Setup(r => r.GetByClientIdAsync(client.Id)).ReturnsAsync(existingMembership);
         membershipRepositoryMock.Setup(r => r.UpdateAsync(existingMembership)).Returns(Task.CompletedTask);
 
         paymentRepositoryMock.Setup(r => r.AddAsync(It.IsAny<Payment>())).Returns(Task.CompletedTask);
         var result =
-            await membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(9, 45, PaymentMethod.Card));
+            await membershipService.BuyMembershipAsync(
+                userId,
+                new BuyMembershipRequest(membershipPlan.Id, 45, PaymentMethod.Card)
+            );
 
-        Assert.Equal(123, result.Id);
-        Assert.Equal(9, result.PlanId);
+        Assert.Equal(existingMembership.Id, result.Id);
+        Assert.Equal(membershipPlan.Id, result.PlanId);
         Assert.Equal(MembershipStatus.Active, result.Status);
 
         clientRepositoryMock.VerifyAll();
@@ -303,9 +312,9 @@ public class MembershipServiceTests
     )
     {
         var planMock = Mock.Get(planRepo);
-        planMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync((MembershipPlan?)null);
+        planMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((MembershipPlan?)null);
 
-        var result = await membershipService.GetPlanByIdAsync(5);
+        var result = await membershipService.GetPlanByIdAsync(Guid.NewGuid());
 
         Assert.Null(result);
         planMock.VerifyAll();
@@ -318,21 +327,22 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var planId = Guid.NewGuid();
         var planMock = Mock.Get(planRepo);
-        planMock.Setup(r => r.GetByIdAsync(3)).ReturnsAsync(
+        planMock.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync(
             new MembershipPlan
             {
-                Id = 3,
+                Id = planId,
                 Name = "Gold",
                 Description = "D",
                 Durations = [30],
                 Price = 500
             });
 
-        var result = await membershipService.GetPlanByIdAsync(3);
+        var result = await membershipService.GetPlanByIdAsync(planId);
 
         Assert.NotNull(result);
-        Assert.Equal(3, result!.Id);
+        Assert.Equal(planId, result!.Id);
         Assert.Equal("Gold", result.Name);
         Assert.Equal("D", result.Description);
         Assert.Equal([30], result.Durations);
@@ -383,6 +393,8 @@ public class MembershipServiceTests
     )
     {
         var userId = "u1";
+        var membershipId = Guid.NewGuid();
+        var planId = Guid.NewGuid();
         var client = new Client
         {
             Id = Guid.NewGuid(),
@@ -398,9 +410,9 @@ public class MembershipServiceTests
 
         var membership = new Membership
         {
-            Id = 7,
+            Id = membershipId,
             ClientId = client.Id,
-            PlanId = 2,
+            PlanId = planId,
             Status = MembershipStatus.Active,
             ActivatedDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             ExpireDate = new DateTime(2025, 2, 1, 0, 0, 0, DateTimeKind.Utc)
@@ -414,8 +426,8 @@ public class MembershipServiceTests
         var result = await membershipService.GetMyMembershipAsync(userId);
 
         Assert.NotNull(result);
-        Assert.Equal(7, result!.Id);
-        Assert.Equal(2, result.PlanId);
+        Assert.Equal(membershipId, result!.Id);
+        Assert.Equal(planId, result.PlanId);
         Assert.Equal(MembershipStatus.Active, result.Status);
         Assert.Equal(membership.ActivatedDate, result.ActivatedDate);
         Assert.Equal(membership.ExpireDate, result.ExpireDate);
@@ -462,11 +474,12 @@ public class MembershipServiceTests
 
         var created = new DateTime(2025, 3, 1, 12, 0, 0, DateTimeKind.Utc);
         var paid = new DateTime(2025, 3, 2, 15, 0, 0, DateTimeKind.Utc);
+        var paymentId = Guid.NewGuid();
         var payments = new[]
         {
             new Payment
             {
-                Id = 1,
+                Id = paymentId,
                 Amount = 100,
                 Method = PaymentMethod.Card,
                 Status = PaymentStatus.Completed,
@@ -484,7 +497,7 @@ public class MembershipServiceTests
         var result = (await membershipService.GetMyPaymentsAsync("u1")).ToArray();
 
         Assert.Single(result);
-        Assert.Equal(1, result[0].Id);
+        Assert.Equal(paymentId, result[0].Id);
         Assert.Equal(100, result[0].Amount);
         Assert.Equal(PaymentMethod.Card, result[0].Method);
         Assert.Equal(PaymentStatus.Completed, result[0].Status);
@@ -501,15 +514,16 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var planId = Guid.NewGuid();
         var planMock = Mock.Get(planRepo);
         planMock.Setup(r => r.AddAsync(It.IsAny<MembershipPlan>()))
-            .Callback<MembershipPlan>(p => p.Id = 42)
+            .Callback<MembershipPlan>(p => p.Id = planId)
             .Returns(Task.CompletedTask);
 
         var result = await membershipService.CreatePlanAsync(
             new CreateMembershipPlanRequest("Name", "Desc", [30, 60], 900));
 
-        Assert.Equal(42, result.Id);
+        Assert.Equal(planId, result.Id);
         Assert.Equal("Name", result.Name);
         Assert.Equal("Desc", result.Description);
         Assert.Equal([30, 60], result.Durations);
@@ -541,10 +555,10 @@ public class MembershipServiceTests
     )
     {
         var planMock = Mock.Get(planRepo);
-        planMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync((MembershipPlan?)null);
+        planMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((MembershipPlan?)null);
 
         var result = await membershipService.UpdatePlanAsync(
-            1,
+            Guid.NewGuid(),
             new UpdateMembershipPlanRequest("N", "D", [30], 200));
 
         Assert.Null(result);
@@ -559,9 +573,10 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var planId = Guid.NewGuid();
         var existing = new MembershipPlan
         {
-            Id = 5,
+            Id = planId,
             Name = "Old",
             Description = "O",
             Durations = [30],
@@ -569,15 +584,15 @@ public class MembershipServiceTests
         };
 
         var planMock = Mock.Get(planRepo);
-        planMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(existing);
+        planMock.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync(existing);
         planMock.Setup(r => r.UpdateAsync(existing)).Returns(Task.CompletedTask);
 
         var result = await membershipService.UpdatePlanAsync(
-            5,
+            planId,
             new UpdateMembershipPlanRequest("New", "ND", [90], 300));
 
         Assert.NotNull(result);
-        Assert.Equal(5, result!.Id);
+        Assert.Equal(planId, result!.Id);
         Assert.Equal("New", result.Name);
         Assert.Equal("ND", result.Description);
         Assert.Equal([90], result.Durations);
@@ -592,9 +607,10 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var planId = Guid.NewGuid();
         var existing = new MembershipPlan
         {
-            Id = 5,
+            Id = planId,
             Name = "Old",
             Description = "O",
             Durations = [30],
@@ -602,10 +618,10 @@ public class MembershipServiceTests
         };
 
         var planMock = Mock.Get(planRepo);
-        planMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(existing);
+        planMock.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync(existing);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            membershipService.UpdatePlanAsync(5, new UpdateMembershipPlanRequest("N", "D", [-1], 200)));
+            membershipService.UpdatePlanAsync(planId, new UpdateMembershipPlanRequest("N", "D", [-1], 200)));
 
         Assert.Equal("Each duration must be a positive number of days.", ex.Message);
         planMock.Verify(r => r.UpdateAsync(It.IsAny<MembershipPlan>()), Times.Never);
@@ -618,13 +634,14 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var planId = Guid.NewGuid();
         var planMock = Mock.Get(planRepo);
-        planMock.Setup(r => r.GetByIdAsync(9)).ReturnsAsync((MembershipPlan?)null);
+        planMock.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync((MembershipPlan?)null);
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => membershipService.DeletePlanAsync(9));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => membershipService.DeletePlanAsync(planId));
 
         Assert.Equal("Membership plan not found.", ex.Message);
-        planMock.Verify(r => r.DeleteAsync(It.IsAny<int>()), Times.Never);
+        planMock.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
     }
 
     [Theory]
@@ -635,9 +652,10 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var planId = Guid.NewGuid();
         var plan = new MembershipPlan
         {
-            Id = 2,
+            Id = planId,
             Name = "P",
             Description = "D",
             Durations = [30],
@@ -646,13 +664,13 @@ public class MembershipServiceTests
 
         var planMock = Mock.Get(planRepo);
         var membershipMock = Mock.Get(membershipRepo);
-        planMock.Setup(r => r.GetByIdAsync(2)).ReturnsAsync(plan);
-        membershipMock.Setup(r => r.CountByPlanIdAsync(2, It.IsAny<CancellationToken>())).ReturnsAsync(3);
+        planMock.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync(plan);
+        membershipMock.Setup(r => r.CountByPlanIdAsync(planId, It.IsAny<CancellationToken>())).ReturnsAsync(3);
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => membershipService.DeletePlanAsync(2));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => membershipService.DeletePlanAsync(planId));
 
         Assert.Equal("Cannot delete a plan that is assigned to memberships.", ex.Message);
-        planMock.Verify(r => r.DeleteAsync(It.IsAny<int>()), Times.Never);
+        planMock.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
         planMock.VerifyAll();
         membershipMock.VerifyAll();
     }
@@ -665,9 +683,10 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var planId = Guid.NewGuid();
         var plan = new MembershipPlan
         {
-            Id = 2,
+            Id = planId,
             Name = "P",
             Description = "D",
             Durations = [30],
@@ -676,13 +695,13 @@ public class MembershipServiceTests
 
         var planMock = Mock.Get(planRepo);
         var membershipMock = Mock.Get(membershipRepo);
-        planMock.Setup(r => r.GetByIdAsync(2)).ReturnsAsync(plan);
-        membershipMock.Setup(r => r.CountByPlanIdAsync(2, It.IsAny<CancellationToken>())).ReturnsAsync(0);
-        planMock.Setup(r => r.DeleteAsync(2)).Returns(Task.CompletedTask);
+        planMock.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync(plan);
+        membershipMock.Setup(r => r.CountByPlanIdAsync(planId, It.IsAny<CancellationToken>())).ReturnsAsync(0);
+        planMock.Setup(r => r.DeleteAsync(planId)).Returns(Task.CompletedTask);
 
-        await membershipService.DeletePlanAsync(2);
+        await membershipService.DeletePlanAsync(planId);
 
-        planMock.Verify(r => r.DeleteAsync(2), Times.Once);
+        planMock.Verify(r => r.DeleteAsync(planId), Times.Once);
         planMock.VerifyAll();
         membershipMock.VerifyAll();
     }
@@ -699,7 +718,7 @@ public class MembershipServiceTests
         clientMock.Setup(r => r.GetByIdAsync(clientId)).ReturnsAsync((Client?)null);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            membershipService.AdminSetMembershipAsync(new AdminSetMembershipRequest(clientId, 1, 30)));
+            membershipService.AdminSetMembershipAsync(new AdminSetMembershipRequest(clientId, Guid.NewGuid(), 30)));
 
         Assert.Equal("Client not found.", ex.Message);
         clientMock.VerifyAll();
@@ -714,6 +733,7 @@ public class MembershipServiceTests
     )
     {
         var clientId = Guid.NewGuid();
+        var planId = Guid.NewGuid();
         var client = new Client
         {
             Id = clientId,
@@ -730,10 +750,10 @@ public class MembershipServiceTests
         var clientMock = Mock.Get(clientRepo);
         var planMock = Mock.Get(planRepo);
         clientMock.Setup(r => r.GetByIdAsync(clientId)).ReturnsAsync(client);
-        planMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((MembershipPlan?)null);
+        planMock.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync((MembershipPlan?)null);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            membershipService.AdminSetMembershipAsync(new AdminSetMembershipRequest(clientId, 99, 30)));
+            membershipService.AdminSetMembershipAsync(new AdminSetMembershipRequest(clientId, planId, 30)));
 
         Assert.Equal("Membership plan not found.", ex.Message);
         clientMock.VerifyAll();
@@ -749,6 +769,7 @@ public class MembershipServiceTests
     )
     {
         var clientId = Guid.NewGuid();
+        var planId = Guid.NewGuid();
         var client = new Client
         {
             Id = clientId,
@@ -764,7 +785,7 @@ public class MembershipServiceTests
 
         var plan = new MembershipPlan
         {
-            Id = 1,
+            Id = planId,
             Name = "P",
             Description = "D",
             Durations = [30],
@@ -774,10 +795,10 @@ public class MembershipServiceTests
         var clientMock = Mock.Get(clientRepo);
         var planMock = Mock.Get(planRepo);
         clientMock.Setup(r => r.GetByIdAsync(clientId)).ReturnsAsync(client);
-        planMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(plan);
+        planMock.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync(plan);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            membershipService.AdminSetMembershipAsync(new AdminSetMembershipRequest(clientId, 1, 365)));
+            membershipService.AdminSetMembershipAsync(new AdminSetMembershipRequest(clientId, planId, 365)));
 
         Assert.Equal("Selected duration is not allowed for this plan.", ex.Message);
         clientMock.VerifyAll();
@@ -794,6 +815,8 @@ public class MembershipServiceTests
     )
     {
         var clientId = Guid.NewGuid();
+        var planId = Guid.NewGuid();
+        var membershipId = Guid.NewGuid();
         var client = new Client
         {
             Id = clientId,
@@ -809,7 +832,7 @@ public class MembershipServiceTests
 
         var plan = new MembershipPlan
         {
-            Id = 3,
+            Id = planId,
             Name = "PlanX",
             Description = "D",
             Durations = [30],
@@ -821,30 +844,30 @@ public class MembershipServiceTests
         var membershipMock = Mock.Get(membershipRepo);
 
         clientMock.Setup(r => r.GetByIdAsync(clientId)).ReturnsAsync(client);
-        planMock.Setup(r => r.GetByIdAsync(3)).ReturnsAsync(plan);
+        planMock.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync(plan);
         membershipMock.Setup(r => r.GetByClientIdAsync(clientId)).ReturnsAsync((Membership?)null);
         membershipMock.Setup(r => r.AddAsync(It.IsAny<Membership>()))
-            .Callback<Membership>(m => m.Id = 200)
+            .Callback<Membership>(m => m.Id = membershipId)
             .Returns(Task.CompletedTask);
 
         var reloaded = new Membership
         {
-            Id = 200,
+            Id = membershipId,
             ClientId = clientId,
             Client = client,
-            PlanId = 3,
+            PlanId = planId,
             Plan = plan,
             Status = MembershipStatus.Active,
             ActivatedDate = DateTime.UtcNow,
             ExpireDate = DateTime.UtcNow.AddDays(30)
         };
-        membershipMock.Setup(r => r.GetByIdAsync(200)).ReturnsAsync(reloaded);
+        membershipMock.Setup(r => r.GetByIdAsync(membershipId)).ReturnsAsync(reloaded);
 
         var result = await membershipService.AdminSetMembershipAsync(
-            new AdminSetMembershipRequest(clientId, 3, 30));
+            new AdminSetMembershipRequest(clientId, planId, 30));
 
-        Assert.Equal(200, result.Id);
-        Assert.Equal(3, result.PlanId);
+        Assert.Equal(membershipId, result.Id);
+        Assert.Equal(planId, result.PlanId);
         Assert.Equal("PlanX", result.PlanName);
         Assert.Equal(clientId, result.ClientId);
         Assert.Equal("Иванов", result.ClientLastName);
@@ -862,11 +885,12 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var membershipId = Guid.NewGuid();
         var membershipMock = Mock.Get(membershipRepo);
-        membershipMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Membership?)null);
+        membershipMock.Setup(r => r.GetByIdAsync(membershipId)).ReturnsAsync((Membership?)null);
 
         var result = await membershipService.AdminUpdateMembershipAsync(
-            999,
+            membershipId,
             new UpdateMembershipRequest(MembershipStatus.Frozen, null, null, null));
 
         Assert.Null(result);
@@ -881,9 +905,12 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var membershipId = Guid.NewGuid();
+        var oldPlanId = Guid.NewGuid();
+        var newPlanId = Guid.NewGuid();
         var plan = new MembershipPlan
         {
-            Id = 10,
+            Id = newPlanId,
             Name = "NewPlan",
             Description = "D",
             Durations = [30],
@@ -892,9 +919,9 @@ public class MembershipServiceTests
 
         var membership = new Membership
         {
-            Id = 1,
+            Id = membershipId,
             ClientId = Guid.NewGuid(),
-            PlanId = 1,
+            PlanId = oldPlanId,
             Status = MembershipStatus.Active,
             ActivatedDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             ExpireDate = new DateTime(2025, 12, 1, 0, 0, 0, DateTimeKind.Utc)
@@ -916,7 +943,7 @@ public class MembershipServiceTests
         membership.Client = client;
         membership.Plan = new MembershipPlan
         {
-            Id = 1,
+            Id = oldPlanId,
             Name = "Old",
             Description = "D",
             Durations = [30],
@@ -926,29 +953,29 @@ public class MembershipServiceTests
         var membershipMock = Mock.Get(membershipRepo);
         var planMock = Mock.Get(planRepo);
 
-        membershipMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(membership);
-        planMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(plan);
+        membershipMock.Setup(r => r.GetByIdAsync(membershipId)).ReturnsAsync(membership);
+        planMock.Setup(r => r.GetByIdAsync(newPlanId)).ReturnsAsync(plan);
         membershipMock.Setup(r => r.UpdateAsync(membership)).Returns(Task.CompletedTask);
 
         var reloaded = new Membership
         {
-            Id = 1,
+            Id = membershipId,
             ClientId = membership.ClientId,
             Client = client,
-            PlanId = 10,
+            PlanId = newPlanId,
             Plan = plan,
             Status = MembershipStatus.Active,
             ActivatedDate = membership.ActivatedDate,
             ExpireDate = membership.ExpireDate
         };
-        membershipMock.SetupSequence(r => r.GetByIdAsync(1)).ReturnsAsync(membership).ReturnsAsync(reloaded);
+        membershipMock.SetupSequence(r => r.GetByIdAsync(membershipId)).ReturnsAsync(membership).ReturnsAsync(reloaded);
 
         var result = await membershipService.AdminUpdateMembershipAsync(
-            1,
-            new UpdateMembershipRequest(null, 10, null, null));
+            membershipId,
+            new UpdateMembershipRequest(null, newPlanId, null, null));
 
         Assert.NotNull(result);
-        Assert.Equal(10, result!.PlanId);
+        Assert.Equal(newPlanId, result!.PlanId);
         Assert.Equal("NewPlan", result.PlanName);
         membershipMock.VerifyAll();
         planMock.VerifyAll();
@@ -961,6 +988,8 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var membershipId = Guid.NewGuid();
+        var planId = Guid.NewGuid();
         var client = new Client
         {
             Id = Guid.NewGuid(),
@@ -976,7 +1005,7 @@ public class MembershipServiceTests
 
         var plan = new MembershipPlan
         {
-            Id = 1,
+            Id = planId,
             Name = "P",
             Description = "D",
             Durations = [30],
@@ -985,9 +1014,9 @@ public class MembershipServiceTests
 
         var membership = new Membership
         {
-            Id = 5,
+            Id = membershipId,
             ClientId = client.Id,
-            PlanId = 1,
+            PlanId = planId,
             Status = MembershipStatus.Active,
             ActivatedDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             ExpireDate = new DateTime(2025, 12, 1, 0, 0, 0, DateTimeKind.Utc),
@@ -996,24 +1025,24 @@ public class MembershipServiceTests
         };
 
         var membershipMock = Mock.Get(membershipRepo);
-        membershipMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(membership);
+        membershipMock.Setup(r => r.GetByIdAsync(membershipId)).ReturnsAsync(membership);
         membershipMock.Setup(r => r.UpdateAsync(membership)).Returns(Task.CompletedTask);
 
         var frozen = new Membership
         {
-            Id = 5,
+            Id = membershipId,
             ClientId = client.Id,
-            PlanId = 1,
+            PlanId = planId,
             Status = MembershipStatus.Frozen,
             ActivatedDate = membership.ActivatedDate,
             ExpireDate = membership.ExpireDate,
             Client = client,
             Plan = plan
         };
-        membershipMock.SetupSequence(r => r.GetByIdAsync(5)).ReturnsAsync(membership).ReturnsAsync(frozen);
+        membershipMock.SetupSequence(r => r.GetByIdAsync(membershipId)).ReturnsAsync(membership).ReturnsAsync(frozen);
 
         var result = await membershipService.AdminUpdateMembershipAsync(
-            5,
+            membershipId,
             new UpdateMembershipRequest(MembershipStatus.Frozen, null, null, null));
 
         Assert.NotNull(result);
@@ -1028,22 +1057,23 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var membershipId = Guid.NewGuid();
         var membership = new Membership
         {
-            Id = 1,
+            Id = membershipId,
             ClientId = Guid.NewGuid(),
-            PlanId = 1,
+            PlanId = Guid.NewGuid(),
             Status = MembershipStatus.Active,
             ActivatedDate = new DateTime(2025, 6, 1, 0, 0, 0, DateTimeKind.Utc),
             ExpireDate = new DateTime(2025, 12, 1, 0, 0, 0, DateTimeKind.Utc)
         };
 
         var membershipMock = Mock.Get(membershipRepo);
-        membershipMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(membership);
+        membershipMock.Setup(r => r.GetByIdAsync(membershipId)).ReturnsAsync(membership);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             membershipService.AdminUpdateMembershipAsync(
-                1,
+                membershipId,
                 new UpdateMembershipRequest(null, null, new DateTime(2025, 10, 1, 0, 0, 0, DateTimeKind.Utc),
                     new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc))));
 
@@ -1058,6 +1088,8 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var planId = Guid.NewGuid();
+        var membershipId = Guid.NewGuid();
         var client = new Client
         {
             Id = Guid.NewGuid(),
@@ -1073,7 +1105,7 @@ public class MembershipServiceTests
 
         var plan = new MembershipPlan
         {
-            Id = 1,
+            Id = planId,
             Name = "P",
             Description = "D",
             Durations = [30],
@@ -1084,9 +1116,9 @@ public class MembershipServiceTests
         var exp = new DateTime(2025, 2, 1, 0, 0, 0, DateTimeKind.Utc);
         var membership = new Membership
         {
-            Id = 8,
+            Id = membershipId,
             ClientId = client.Id,
-            PlanId = 1,
+            PlanId = planId,
             Status = MembershipStatus.Active,
             ActivatedDate = act,
             ExpireDate = exp,
@@ -1098,24 +1130,24 @@ public class MembershipServiceTests
         var newExp = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc);
 
         var membershipMock = Mock.Get(membershipRepo);
-        membershipMock.Setup(r => r.GetByIdAsync(8)).ReturnsAsync(membership);
+        membershipMock.Setup(r => r.GetByIdAsync(membershipId)).ReturnsAsync(membership);
         membershipMock.Setup(r => r.UpdateAsync(membership)).Returns(Task.CompletedTask);
 
         var reloaded = new Membership
         {
-            Id = 8,
+            Id = membershipId,
             ClientId = client.Id,
-            PlanId = 1,
+            PlanId = planId,
             Status = MembershipStatus.Active,
             ActivatedDate = newAct,
             ExpireDate = newExp,
             Client = client,
             Plan = plan
         };
-        membershipMock.SetupSequence(r => r.GetByIdAsync(8)).ReturnsAsync(membership).ReturnsAsync(reloaded);
+        membershipMock.SetupSequence(r => r.GetByIdAsync(membershipId)).ReturnsAsync(membership).ReturnsAsync(reloaded);
 
         var result = await membershipService.AdminUpdateMembershipAsync(
-            8,
+            membershipId,
             new UpdateMembershipRequest(null, null, newAct, newExp));
 
         Assert.NotNull(result);
@@ -1131,22 +1163,25 @@ public class MembershipServiceTests
         MembershipService membershipService
     )
     {
+        var membershipId = Guid.NewGuid();
         var membership = new Membership
         {
-            Id = 3,
+            Id = membershipId,
             ClientId = Guid.NewGuid(),
-            PlanId = 1,
+            PlanId = Guid.NewGuid(),
             Status = MembershipStatus.Active,
             ActivatedDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             ExpireDate = new DateTime(2025, 12, 1, 0, 0, 0, DateTimeKind.Utc)
         };
 
         var membershipMock = Mock.Get(membershipRepo);
-        membershipMock.SetupSequence(r => r.GetByIdAsync(3)).ReturnsAsync(membership).ReturnsAsync((Membership?)null);
+        membershipMock.SetupSequence(r => r.GetByIdAsync(membershipId))
+            .ReturnsAsync(membership)
+            .ReturnsAsync((Membership?)null);
         membershipMock.Setup(r => r.UpdateAsync(membership)).Returns(Task.CompletedTask);
 
         var result = await membershipService.AdminUpdateMembershipAsync(
-            3,
+            membershipId,
             new UpdateMembershipRequest(MembershipStatus.Disabled, null, null, null));
 
         Assert.Null(result);

@@ -3,7 +3,7 @@ using ZPassFit.Data.Models.Clients;
 namespace ZPassFit.Dto;
 
 public record BonusTransactionListItemResponse(
-    int Id,
+    Guid Id,
     BonusTransactionType Type,
     DateTime CreateDate,
     DateTime? ExpireDate,

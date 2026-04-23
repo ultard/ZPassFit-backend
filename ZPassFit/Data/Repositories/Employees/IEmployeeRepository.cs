@@ -4,8 +4,8 @@ namespace ZPassFit.Data.Repositories.Employees;
 
 public interface IEmployeeRepository
 {
-    Task<Employee?> GetByIdAsync(int id);
+    Task<Employee?> GetByIdAsync(Guid id);
     Task AddAsync(Employee employee);
     Task UpdateAsync(Employee employee);
-    Task DeleteAsync(int id);
+    Task DeleteAsync(Guid id);
 }

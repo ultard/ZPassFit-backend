@@ -4,7 +4,7 @@ namespace ZPassFit.Data.Models;
 
 public class Employee
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string UserId { get; set; } = null!;
 
     [MaxLength(100)] public required string LastName { get; set; }

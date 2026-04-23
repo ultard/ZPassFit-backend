@@ -5,11 +5,11 @@ namespace ZPassFit.Data.Repositories.Memberships;
 
 public interface IPaymentRepository
 {
-    Task<Payment?> GetByIdAsync(int id);
+    Task<Payment?> GetByIdAsync(Guid id);
     Task<IEnumerable<Payment>> GetByClientIdAsync(Guid clientId);
     Task AddAsync(Payment payment);
     Task UpdateAsync(Payment payment);
-    Task DeleteAsync(int id);
+    Task DeleteAsync(Guid id);
 
     Task<(int Count, long TotalAmount)> GetCompletedPaymentsSummaryBetweenAsync(
         DateTime fromUtcInclusive,

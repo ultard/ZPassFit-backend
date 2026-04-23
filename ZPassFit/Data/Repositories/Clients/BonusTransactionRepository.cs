@@ -53,7 +53,7 @@ public class BonusTransactionRepository(ApplicationDbContext context) : IBonusTr
         return (items, total);
     }
 
-    public async Task<BonusTransaction?> GetByIdAsync(int id)
+    public async Task<BonusTransaction?> GetByIdAsync(Guid id)
     {
         return await context.BonusTransactions
             .Include(t => t.Client)
@@ -80,7 +80,7 @@ public class BonusTransactionRepository(ApplicationDbContext context) : IBonusTr
         await context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(Guid id)
     {
         var transaction = await GetByIdAsync(id);
         if (transaction == null) return;

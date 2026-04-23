@@ -4,7 +4,7 @@ using ZPassFit.Data.Models.Memberships;
 namespace ZPassFit.Dto;
 
 public record MembershipPlanResponse(
-    int Id,
+    Guid Id,
     string Name,
     string Description,
     int[] Durations,
@@ -12,21 +12,21 @@ public record MembershipPlanResponse(
 );
 
 public record MembershipResponse(
-    int Id,
-    int PlanId,
+    Guid Id,
+    Guid PlanId,
     MembershipStatus Status,
     DateTime ActivatedDate,
     DateTime ExpireDate
 );
 
 public record BuyMembershipRequest(
-    int PlanId,
+    Guid PlanId,
     int DurationDays,
     PaymentMethod Method
 );
 
 public record PaymentResponse(
-    int Id,
+    Guid Id,
     int Amount,
     PaymentMethod Method,
     PaymentStatus Status,
@@ -53,7 +53,7 @@ public record UpdateMembershipPlanRequest(
 /// </summary>
 public record AdminSetMembershipRequest(
     Guid ClientId,
-    int PlanId,
+    Guid PlanId,
     [property: Range(1, 3650)] int DurationDays
 );
 
@@ -62,14 +62,14 @@ public record AdminSetMembershipRequest(
 /// </summary>
 public record UpdateMembershipRequest(
     MembershipStatus? Status,
-    int? PlanId,
+    Guid? PlanId,
     DateTime? ActivatedDate,
     DateTime? ExpireDate
 );
 
 public record MembershipListItemResponse(
-    int Id,
-    int PlanId,
+    Guid Id,
+    Guid PlanId,
     string PlanName,
     Guid ClientId,
     string ClientLastName,

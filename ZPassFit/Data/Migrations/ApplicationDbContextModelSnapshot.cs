@@ -245,11 +245,9 @@ namespace ZPassFit.Data.Migrations
 
             modelBuilder.Entity("ZPassFit.Data.Models.Attendance.VisitLog", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("ClientId")
                         .HasColumnType("uuid");
@@ -260,8 +258,8 @@ namespace ZPassFit.Data.Migrations
                     b.Property<DateTime?>("LeaveDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("MembershipId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -320,11 +318,9 @@ namespace ZPassFit.Data.Migrations
 
             modelBuilder.Entity("ZPassFit.Data.Models.Clients.BonusTransaction", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("ClientId")
                         .HasColumnType("uuid");
@@ -409,11 +405,9 @@ namespace ZPassFit.Data.Migrations
 
             modelBuilder.Entity("ZPassFit.Data.Models.Clients.ClientLevel", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("ClientId")
                         .HasColumnType("uuid");
@@ -434,6 +428,7 @@ namespace ZPassFit.Data.Migrations
             modelBuilder.Entity("ZPassFit.Data.Models.Clients.Level", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<int>("ActivateDays")
@@ -459,11 +454,9 @@ namespace ZPassFit.Data.Migrations
 
             modelBuilder.Entity("ZPassFit.Data.Models.Employee", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("BirthDate")
                         .HasColumnType("timestamp with time zone");
@@ -516,11 +509,9 @@ namespace ZPassFit.Data.Migrations
 
             modelBuilder.Entity("ZPassFit.Data.Models.Memberships.Membership", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("ActivatedDate")
                         .HasColumnType("timestamp with time zone");
@@ -531,8 +522,8 @@ namespace ZPassFit.Data.Migrations
                     b.Property<DateTime>("ExpireDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("PlanId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -549,11 +540,9 @@ namespace ZPassFit.Data.Migrations
 
             modelBuilder.Entity("ZPassFit.Data.Models.Memberships.MembershipPlan", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -579,11 +568,9 @@ namespace ZPassFit.Data.Migrations
 
             modelBuilder.Entity("ZPassFit.Data.Models.Memberships.Payment", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Amount")
                         .HasColumnType("integer");
@@ -594,8 +581,8 @@ namespace ZPassFit.Data.Migrations
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("EmployeeId")
-                        .HasColumnType("integer");
+                    b.Property<Guid?>("EmployeeId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Method")
                         .HasColumnType("integer");

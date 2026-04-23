@@ -4,7 +4,7 @@ namespace ZPassFit.Data.Models.Memberships;
 
 public class MembershipPlan
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     [MaxLength(32)] public required string Name { get; set; }
 

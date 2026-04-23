@@ -3,18 +3,18 @@ namespace ZPassFit.Dto;
 public record QrSessionResponse(Guid Token, DateTime ExpireDate);
 
 public record VisitLogResponse(
-    int Id,
+    Guid Id,
     DateTime EnterDate,
     DateTime? LeaveDate,
-    int MembershipId,
+    Guid MembershipId,
     Guid ClientId
 );
 
 public record VisitLogListItemResponse(
-    int Id,
+    Guid Id,
     DateTime EnterDate,
     DateTime? LeaveDate,
-    int MembershipId,
+    Guid MembershipId,
     Guid ClientId,
     string ClientLastName,
     string ClientFirstName

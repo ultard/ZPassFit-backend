@@ -24,13 +24,13 @@ public class DashboardMembershipPlansController(IMembershipService membershipSer
         return Results.Ok(plans);
     }
 
-    [HttpGet("{id:int}")]
+    [HttpGet("{id:guid}")]
     [EndpointSummary("Тарифный план по ID")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MembershipPlanResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetById([FromRoute] int id)
+    public async Task<IResult> GetById([FromRoute] Guid id)
     {
         var plan = await membershipService.GetPlanByIdAsync(id);
         return plan == null ? Results.NotFound() : Results.Ok(plan);
@@ -55,14 +55,14 @@ public class DashboardMembershipPlansController(IMembershipService membershipSer
         }
     }
 
-    [HttpPut("{id:int}")]
+    [HttpPut("{id:guid}")]
     [EndpointSummary("Обновить тарифный план")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MembershipPlanResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> Update([FromRoute] int id, [FromBody] UpdateMembershipPlanRequest request)
+    public async Task<IResult> Update([FromRoute] Guid id, [FromBody] UpdateMembershipPlanRequest request)
     {
         try
         {
@@ -75,7 +75,7 @@ public class DashboardMembershipPlansController(IMembershipService membershipSer
         }
     }
 
-    [HttpDelete("{id:int}")]
+    [HttpDelete("{id:guid}")]
     [EndpointSummary("Удалить тарифный план")]
     [EndpointDescription("Нельзя удалить план, если на него ссылаются абонементы.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -83,7 +83,7 @@ public class DashboardMembershipPlansController(IMembershipService membershipSer
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IResult> Delete([FromRoute] int id)
+    public async Task<IResult> Delete([FromRoute] Guid id)
     {
         try
         {

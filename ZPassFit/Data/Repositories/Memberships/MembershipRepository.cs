@@ -5,7 +5,7 @@ namespace ZPassFit.Data.Repositories.Memberships;
 
 public class MembershipRepository(ApplicationDbContext context) : IMembershipRepository
 {
-    public async Task<Membership?> GetByIdAsync(int id)
+    public async Task<Membership?> GetByIdAsync(Guid id)
     {
         return await context.Memberships
             .Include(m => m.Plan)
@@ -32,7 +32,7 @@ public class MembershipRepository(ApplicationDbContext context) : IMembershipRep
         await context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(Guid id)
     {
         var membership = await GetByIdAsync(id);
         if (membership == null) return;
@@ -48,7 +48,7 @@ public class MembershipRepository(ApplicationDbContext context) : IMembershipRep
         );
     }
 
-    public async Task<int> CountByPlanIdAsync(int planId, CancellationToken cancellationToken = default)
+    public async Task<int> CountByPlanIdAsync(Guid planId, CancellationToken cancellationToken = default)
     {
         return await context.Memberships.CountAsync(m => m.PlanId == planId, cancellationToken);
     }

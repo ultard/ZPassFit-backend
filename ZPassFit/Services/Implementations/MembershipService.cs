@@ -19,7 +19,7 @@ public class MembershipService(
         return plans.Select(p => new MembershipPlanResponse(p.Id, p.Name, p.Description, p.Durations, p.Price));
     }
 
-    public async Task<MembershipPlanResponse?> GetPlanByIdAsync(int id)
+    public async Task<MembershipPlanResponse?> GetPlanByIdAsync(Guid id)
     {
         var plan = await planRepository.GetByIdAsync(id);
         return plan == null
@@ -111,7 +111,7 @@ public class MembershipService(
         return new MembershipPlanResponse(plan.Id, plan.Name, plan.Description, plan.Durations, plan.Price);
     }
 
-    public async Task<MembershipPlanResponse?> UpdatePlanAsync(int id, UpdateMembershipPlanRequest request)
+    public async Task<MembershipPlanResponse?> UpdatePlanAsync(Guid id, UpdateMembershipPlanRequest request)
     {
         var plan = await planRepository.GetByIdAsync(id);
         if (plan == null) return null;
@@ -127,7 +127,7 @@ public class MembershipService(
         return new MembershipPlanResponse(plan.Id, plan.Name, plan.Description, plan.Durations, plan.Price);
     }
 
-    public async Task DeletePlanAsync(int id)
+    public async Task DeletePlanAsync(Guid id)
     {
         var plan = await planRepository.GetByIdAsync(id)
                    ?? throw new InvalidOperationException("Membership plan not found.");
@@ -179,7 +179,7 @@ public class MembershipService(
         return MapListItem(reloaded);
     }
 
-    public async Task<MembershipListItemResponse?> AdminUpdateMembershipAsync(int id, UpdateMembershipRequest request)
+    public async Task<MembershipListItemResponse?> AdminUpdateMembershipAsync(Guid id, UpdateMembershipRequest request)
     {
         var membership = await membershipRepository.GetByIdAsync(id);
         if (membership == null) return null;

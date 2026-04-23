@@ -9,7 +9,7 @@ public interface IVisitLogRepository
     Task UpdateAsync(VisitLog visitLog);
     Task<VisitLog?> GetOpenVisitByClientIdAsync(Guid clientId);
     Task<IEnumerable<VisitLog>> GetVisitHistoryByClientIdAsync(Guid clientId);
-    Task<VisitLog?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+    Task<VisitLog?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<int> CountVisitsEnteringBetweenAsync(DateTime fromUtcInclusive, DateTime toUtcExclusive);
     Task<int> CountOpenVisitsAsync();

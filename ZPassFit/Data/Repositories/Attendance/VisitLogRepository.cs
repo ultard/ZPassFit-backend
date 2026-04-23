@@ -59,17 +59,17 @@ public class VisitLogRepository(ApplicationDbContext context) : IVisitLogReposit
         return await context.Database
             .SqlQuery<ClubDayCountRow>(
                 $"""
-                 SELECT date(timezone({timeZoneId}, v."EnterDate")) AS "Date", COUNT(*)::int AS "Count"
+                 SELECT date(timezone({timeZoneId}::text, v."EnterDate")) AS "Date", COUNT(*)::int AS "Count"
                  FROM "VisitLogs" AS v
                  WHERE v."EnterDate" >= {fromUtcInclusive} AND v."EnterDate" < {toUtcExclusive}
-                 GROUP BY date(timezone({timeZoneId}, v."EnterDate"))
-                 ORDER BY date(timezone({timeZoneId}, v."EnterDate"))
+                 GROUP BY 1
+                 ORDER BY 1
                  """
             )
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<VisitLog?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<VisitLog?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.VisitLogs
             .AsNoTracking()

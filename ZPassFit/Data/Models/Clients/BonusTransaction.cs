@@ -10,7 +10,7 @@ public enum BonusTransactionType
 
 public class BonusTransaction
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     public BonusTransactionType Type { get; set; }
     public DateTime CreateDate { get; set; } = DateTime.UtcNow;

@@ -59,14 +59,14 @@ public class DashboardMembershipsController(
         return Results.Ok(new PagedMembershipsResponse(page, pageSize, total, mapped));
     }
 
-    [HttpGet("{id:int}")]
+    [HttpGet("{id:guid}")]
     [EndpointSummary("Абонемент по ID")]
     [EndpointDescription("Карточка абонемента в дашборде с клиентом и тарифом.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MembershipListItemResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IResult> GetById([FromRoute] int id)
+    public async Task<IResult> GetById([FromRoute] Guid id)
     {
         var membership = await membershipRepository.GetByIdAsync(id);
         return membership == null ? Results.NotFound() : Results.Ok(MapListItem(membership));
@@ -93,7 +93,7 @@ public class DashboardMembershipsController(
         }
     }
 
-    [HttpPut("{id:int}")]
+    [HttpPut("{id:guid}")]
     [EndpointSummary("Обновить абонемент")]
     [EndpointDescription("Изменение статуса, тарифа и/или дат действия.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MembershipListItemResponse))]
@@ -101,7 +101,7 @@ public class DashboardMembershipsController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> Update([FromRoute] int id, [FromBody] UpdateMembershipRequest request)
+    public async Task<IResult> Update([FromRoute] Guid id, [FromBody] UpdateMembershipRequest request)
     {
         try
         {

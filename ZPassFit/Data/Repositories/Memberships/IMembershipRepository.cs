@@ -4,13 +4,13 @@ namespace ZPassFit.Data.Repositories.Memberships;
 
 public interface IMembershipRepository
 {
-    Task<Membership?> GetByIdAsync(int id);
+    Task<Membership?> GetByIdAsync(Guid id);
     Task<Membership?> GetByClientIdAsync(Guid clientId);
     Task AddAsync(Membership membership);
     Task UpdateAsync(Membership membership);
-    Task DeleteAsync(int id);
+    Task DeleteAsync(Guid id);
     Task<int> CountActiveAsync(DateTime utcNow);
-    Task<int> CountByPlanIdAsync(int planId, CancellationToken cancellationToken = default);
+    Task<int> CountByPlanIdAsync(Guid planId, CancellationToken cancellationToken = default);
 
     Task<int> CountActivatedBetweenAsync(
         DateTime fromUtcInclusive,
@@ -33,4 +33,4 @@ public interface IMembershipRepository
     );
 }
 
-public record MembershipPlanActivationCount(int PlanId, string PlanName, int Count);
+public record MembershipPlanActivationCount(Guid PlanId, string PlanName, int Count);

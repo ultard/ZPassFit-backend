@@ -71,11 +71,11 @@ public class ClientRepository(ApplicationDbContext context) : IClientRepository
         return await context.Database
             .SqlQuery<ClubDayCountRow>(
                 $"""
-                 SELECT date(timezone({timeZoneId}, c."RegistrationDate")) AS "Date", COUNT(*)::int AS "Count"
+                 SELECT date(timezone({timeZoneId}::text, c."RegistrationDate")) AS "Date", COUNT(*)::int AS "Count"
                  FROM "Clients" AS c
                  WHERE c."RegistrationDate" >= {fromUtcInclusive} AND c."RegistrationDate" < {toUtcExclusive}
-                 GROUP BY date(timezone({timeZoneId}, c."RegistrationDate"))
-                 ORDER BY date(timezone({timeZoneId}, c."RegistrationDate"))
+                 GROUP BY 1
+                 ORDER BY 1
                  """
             )
             .ToListAsync(cancellationToken);

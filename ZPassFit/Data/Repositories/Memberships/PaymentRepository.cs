@@ -6,7 +6,7 @@ namespace ZPassFit.Data.Repositories.Memberships;
 
 public class PaymentRepository(ApplicationDbContext context) : IPaymentRepository
 {
-    public async Task<Payment?> GetByIdAsync(int id)
+    public async Task<Payment?> GetByIdAsync(Guid id)
     {
         return await context.Payments
             .Include(p => p.Client)
@@ -34,7 +34,7 @@ public class PaymentRepository(ApplicationDbContext context) : IPaymentRepositor
         await context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(Guid id)
     {
         var payment = await GetByIdAsync(id);
         if (payment == null) return;
@@ -70,14 +70,14 @@ public class PaymentRepository(ApplicationDbContext context) : IPaymentRepositor
         return await context.Database
             .SqlQuery<ClubDayRevenueRow>(
                 $"""
-                 SELECT date(timezone({timeZoneId}, COALESCE(p."PaymentDate", p."CreateDate"))) AS "Date",
+                 SELECT date(timezone({timeZoneId}::text, COALESCE(p."PaymentDate", p."CreateDate"))) AS "Date",
                         SUM(p."Amount")::bigint AS "TotalAmount"
                  FROM "Payments" AS p
                  WHERE p."Status" = {completed}
                    AND COALESCE(p."PaymentDate", p."CreateDate") >= {fromUtcInclusive}
                    AND COALESCE(p."PaymentDate", p."CreateDate") < {toUtcExclusive}
-                 GROUP BY date(timezone({timeZoneId}, COALESCE(p."PaymentDate", p."CreateDate")))
-                 ORDER BY date(timezone({timeZoneId}, COALESCE(p."PaymentDate", p."CreateDate")))
+                 GROUP BY 1
+                 ORDER BY 1
                  """
             )
             .ToListAsync(cancellationToken);

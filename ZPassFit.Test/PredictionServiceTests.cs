@@ -70,6 +70,8 @@ public class PredictionServiceTests
     public async Task Predict_GrpcFails_Wraps()
     {
         var id = Guid.NewGuid();
+        var membershipId = Guid.NewGuid();
+        var planId = Guid.NewGuid();
         var client = new Client
         {
             Id = id,
@@ -85,15 +87,15 @@ public class PredictionServiceTests
 
         var membership = new Membership
         {
-            Id = 1,
+            Id = membershipId,
             ClientId = id,
-            PlanId = 2,
+            PlanId = planId,
             Status = MembershipStatus.Active,
             ActivatedDate = DateTime.UtcNow.AddDays(-30),
             ExpireDate = DateTime.UtcNow.AddDays(30),
             Plan = new MembershipPlan
             {
-                Id = 2,
+                Id = planId,
                 Name = "P",
                 Description = "D",
                 Durations = [30],
@@ -149,15 +151,15 @@ public class PredictionServiceTests
 
         var membership = new Membership
         {
-            Id = 1,
+            Id = Guid.NewGuid(),
             ClientId = id,
-            PlanId = 2,
+            PlanId = Guid.NewGuid(),
             Status = MembershipStatus.Active,
             ActivatedDate = DateTime.UtcNow.AddDays(-30),
             ExpireDate = DateTime.UtcNow.AddDays(30),
             Plan = new MembershipPlan
             {
-                Id = 2,
+                Id = Guid.NewGuid(),
                 Name = "P",
                 Description = "D",
                 Durations = [30],

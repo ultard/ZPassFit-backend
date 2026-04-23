@@ -15,9 +15,9 @@ public interface IBonusTransactionRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<BonusTransaction?> GetByIdAsync(int id);
+    Task<BonusTransaction?> GetByIdAsync(Guid id);
     Task<IEnumerable<BonusTransaction>> GetByClientIdAsync(Guid clientId);
     Task AddAsync(BonusTransaction transaction);
     Task UpdateAsync(BonusTransaction transaction);
-    Task DeleteAsync(int id);
+    Task DeleteAsync(Guid id);
 }

@@ -5,7 +5,7 @@ namespace ZPassFit.Data.Repositories.Clients;
 
 public class ClientLevelRepository(ApplicationDbContext context) : IClientLevelRepository
 {
-    public async Task<ClientLevel?> GetByIdAsync(int id)
+    public async Task<ClientLevel?> GetByIdAsync(Guid id)
     {
         return await context.ClientLevels
             .Include(cl => cl.Client)
@@ -33,7 +33,7 @@ public class ClientLevelRepository(ApplicationDbContext context) : IClientLevelR
         await context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(Guid id)
     {
         var clientLevel = await GetByIdAsync(id);
         if (clientLevel == null) return;
