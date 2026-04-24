@@ -323,7 +323,9 @@ namespace ZPassFit.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ClientId = table.Column<Guid>(type: "uuid", nullable: false),
-                    LevelId = table.Column<Guid>(type: "uuid", nullable: false)
+                    LevelId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReceiveDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    RevocationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {

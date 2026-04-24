@@ -12,7 +12,7 @@ using ZPassFit.Data;
 namespace ZPassFit.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260422114547_Initial")]
+    [Migration("20260424200625_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -417,6 +417,12 @@ namespace ZPassFit.Data.Migrations
 
                     b.Property<Guid>("LevelId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ReceiveDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("RevocationDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

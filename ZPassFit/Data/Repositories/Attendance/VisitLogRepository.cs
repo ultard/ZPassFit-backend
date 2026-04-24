@@ -34,6 +34,20 @@ public class VisitLogRepository(ApplicationDbContext context) : IVisitLogReposit
             .ToListAsync();
     }
 
+    public async Task<int> CountDistinctVisitDaysByClientAsync(
+        Guid clientId,
+        DateTime fromUtcInclusive,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await context.VisitLogs
+            .AsNoTracking()
+            .Where(v => v.ClientId == clientId && v.EnterDate >= fromUtcInclusive)
+            .Select(v => v.EnterDate.Date)
+            .Distinct()
+            .CountAsync(cancellationToken);
+    }
+
     public async Task<int> CountVisitsEnteringBetweenAsync(
         DateTime fromUtcInclusive,
         DateTime toUtcExclusive
@@ -124,5 +138,27 @@ public class VisitLogRepository(ApplicationDbContext context) : IVisitLogReposit
             .ToListAsync(cancellationToken);
 
         return (items, totalCount);
+    }
+
+    public async Task<int> AutoCloseStaleOpenVisitsAsync(
+        TimeSpan maxOpenDuration,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(maxOpenDuration, TimeSpan.Zero);
+
+        var threshold = DateTime.UtcNow - maxOpenDuration;
+
+        var stale = await context.VisitLogs
+            .Where(v => v.LeaveDate == null && v.EnterDate < threshold)
+            .ToListAsync(cancellationToken);
+
+        foreach (var v in stale)
+            v.LeaveDate = v.EnterDate + maxOpenDuration;
+
+        if (stale.Count > 0)
+            await context.SaveChangesAsync(cancellationToken);
+
+        return stale.Count;
     }
 }

@@ -1,4 +1,5 @@
 using ZPassFit.Data.Models.Clients;
+using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Dto;
 using ZPassFit.Services.Interfaces;
@@ -8,6 +9,8 @@ namespace ZPassFit.Services.Implementations;
 public class ClientService(
     IClientRepository clientRepository,
     IClientLevelRepository clientLevelRepository,
+    ILevelRepository levelRepository,
+    IVisitLogRepository visitLogRepository,
     IJwtTokenService jwtTokenService
 ) : IClientService
 {
@@ -23,7 +26,25 @@ public class ClientService(
         if (client == null) return null;
 
         var clientLevel = await clientLevelRepository.GetActiveByClientIdAsync(client.Id);
-        return clientLevel == null ? null : MapClientLevel(clientLevel);
+        if (clientLevel == null) return null;
+
+        var nextLevelEntity = await levelRepository.GetNextByPreviousLevelIdAsync(
+            clientLevel.LevelId,
+            CancellationToken.None);
+
+        LevelResponse? nextLevelDto = null;
+        int? remaining = null;
+        if (nextLevelEntity != null)
+        {
+            nextLevelDto = MapLevel(nextLevelEntity);
+            var visitDays = await visitLogRepository.CountDistinctVisitDaysByClientAsync(
+                client.Id,
+                client.RegistrationDate,
+                CancellationToken.None);
+            remaining = Math.Max(0, nextLevelEntity.ActivateDays - visitDays);
+        }
+
+        return MapClientLevel(clientLevel, nextLevelDto, remaining);
     }
 
     public async Task<ClientResponse?> GetByIdAsync(Guid id)
@@ -113,9 +134,12 @@ public class ClientService(
         );
     }
 
-    private static MyClientLevelResponse MapClientLevel(ClientLevel cl)
+    private static MyClientLevelResponse MapClientLevel(
+        ClientLevel cl,
+        LevelResponse? nextLevel,
+        int? remainingDaysToNextLevel)
     {
-        return new MyClientLevelResponse(cl.Id, cl.ReceiveDate, MapLevel(cl.Level));
+        return new MyClientLevelResponse(cl.Id, cl.ReceiveDate, MapLevel(cl.Level), nextLevel, remainingDaysToNextLevel);
     }
 
     private static LevelResponse MapLevel(Level l)

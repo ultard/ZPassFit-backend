@@ -1,6 +1,7 @@
 using AutoFixture.Xunit3;
 using Moq;
 using ZPassFit.Data.Models.Clients;
+using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Dto;
 using ZPassFit.Services.Implementations;
@@ -48,12 +49,16 @@ public class ClientServiceTests
     public async Task GetMyActiveLevel_NoClient_ReturnsNull(
         [Frozen] IClientRepository clientRepository,
         [Frozen] IClientLevelRepository clientLevelRepository,
+        [Frozen] ILevelRepository levelRepository,
+        [Frozen] IVisitLogRepository visitLogRepository,
         ClientService clientService
     )
     {
         var userId = "u1";
         var clientRepositoryMock = Mock.Get(clientRepository);
         var clientLevelRepositoryMock = Mock.Get(clientLevelRepository);
+        var levelRepositoryMock = Mock.Get(levelRepository);
+        var visitLogRepositoryMock = Mock.Get(visitLogRepository);
         clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync((Client?)null);
 
         var result = await clientService.GetMyActiveLevelAsync(userId);
@@ -61,6 +66,10 @@ public class ClientServiceTests
         Assert.Null(result);
         clientRepositoryMock.VerifyAll();
         clientLevelRepositoryMock.VerifyAll();
+        levelRepositoryMock.Verify(r => r.GetNextByPreviousLevelIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        visitLogRepositoryMock.Verify(
+            r => r.CountDistinctVisitDaysByClientAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Theory]
@@ -68,6 +77,8 @@ public class ClientServiceTests
     public async Task GetMyActiveLevel_NoActiveLevel_ReturnsNull(
         [Frozen] IClientRepository clientRepository,
         [Frozen] IClientLevelRepository clientLevelRepository,
+        [Frozen] ILevelRepository levelRepository,
+        [Frozen] IVisitLogRepository visitLogRepository,
         ClientService clientService
     )
     {
@@ -87,6 +98,8 @@ public class ClientServiceTests
 
         var clientRepositoryMock = Mock.Get(clientRepository);
         var clientLevelRepositoryMock = Mock.Get(clientLevelRepository);
+        var levelRepositoryMock = Mock.Get(levelRepository);
+        var visitLogRepositoryMock = Mock.Get(visitLogRepository);
         clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
         clientLevelRepositoryMock.Setup(r => r.GetActiveByClientIdAsync(client.Id)).ReturnsAsync((ClientLevel?)null);
 
@@ -95,6 +108,10 @@ public class ClientServiceTests
         Assert.Null(result);
         clientRepositoryMock.VerifyAll();
         clientLevelRepositoryMock.VerifyAll();
+        levelRepositoryMock.Verify(r => r.GetNextByPreviousLevelIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        visitLogRepositoryMock.Verify(
+            r => r.CountDistinctVisitDaysByClientAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Theory]
@@ -102,6 +119,8 @@ public class ClientServiceTests
     public async Task GetMyActiveLevel_WithLevel_Maps(
         [Frozen] IClientRepository clientRepository,
         [Frozen] IClientLevelRepository clientLevelRepository,
+        [Frozen] ILevelRepository levelRepository,
+        [Frozen] IVisitLogRepository visitLogRepository,
         ClientService clientService
     )
     {
@@ -147,8 +166,12 @@ public class ClientServiceTests
 
         var clientRepositoryMock = Mock.Get(clientRepository);
         var clientLevelRepositoryMock = Mock.Get(clientLevelRepository);
+        var levelRepositoryMock = Mock.Get(levelRepository);
         clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
         clientLevelRepositoryMock.Setup(r => r.GetActiveByClientIdAsync(client.Id)).ReturnsAsync(clientLevel);
+        levelRepositoryMock
+            .Setup(r => r.GetNextByPreviousLevelIdAsync(levelId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Level?)null);
 
         var result = await clientService.GetMyActiveLevelAsync(userId);
 
@@ -161,9 +184,104 @@ public class ClientServiceTests
         Assert.Equal(7, result.Level.GraceDays);
         Assert.Equal(prevId, result.Level.PreviousLevelId);
         Assert.Equal("Silver", result.Level.PreviousLevelName);
+        Assert.Null(result.NextLevel);
+        Assert.Null(result.RemainingDaysToNextLevel);
 
         clientRepositoryMock.VerifyAll();
         clientLevelRepositoryMock.VerifyAll();
+        levelRepositoryMock.VerifyAll();
+        Mock.Get(visitLogRepository).Verify(
+            r => r.CountDistinctVisitDaysByClientAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Theory]
+    [AutoMoqData]
+    public async Task GetMyActiveLevel_WithNextLevel_ComputesRemaining(
+        [Frozen] IClientRepository clientRepository,
+        [Frozen] IClientLevelRepository clientLevelRepository,
+        [Frozen] ILevelRepository levelRepository,
+        [Frozen] IVisitLogRepository visitLogRepository,
+        ClientService clientService
+    )
+    {
+        var userId = "u1";
+        var bronzeId = Guid.NewGuid();
+        var silverId = Guid.NewGuid();
+        var clientLevelId = Guid.NewGuid();
+        var reg = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var client = new Client
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            LastName = "Petrov",
+            FirstName = "Petr",
+            MiddleName = "P",
+            BirthDate = new DateTime(1990, 1, 1),
+            Gender = ClientGender.Unknown,
+            Phone = "+79990000000",
+            Email = "petrov@example.com",
+            RegistrationDate = reg
+        };
+
+        var nextLevel = new Level
+        {
+            Id = silverId,
+            Name = "Silver",
+            ActivateDays = 30,
+            GraceDays = 10,
+            PreviousLevelId = bronzeId,
+            PreviousLevel = new Level
+            {
+                Id = bronzeId,
+                Name = "Bronze",
+                ActivateDays = 0,
+                GraceDays = 7
+            }
+        };
+
+        var clientLevel = new ClientLevel
+        {
+            Id = clientLevelId,
+            ClientId = client.Id,
+            LevelId = bronzeId,
+            ReceiveDate = new DateTime(2025, 6, 1, 12, 0, 0, DateTimeKind.Utc),
+            Level = new Level
+            {
+                Id = bronzeId,
+                Name = "Bronze",
+                ActivateDays = 0,
+                GraceDays = 7,
+                PreviousLevelId = null,
+                PreviousLevel = null
+            }
+        };
+
+        var clientRepositoryMock = Mock.Get(clientRepository);
+        var clientLevelRepositoryMock = Mock.Get(clientLevelRepository);
+        var levelRepositoryMock = Mock.Get(levelRepository);
+        var visitLogRepositoryMock = Mock.Get(visitLogRepository);
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
+        clientLevelRepositoryMock.Setup(r => r.GetActiveByClientIdAsync(client.Id)).ReturnsAsync(clientLevel);
+        levelRepositoryMock
+            .Setup(r => r.GetNextByPreviousLevelIdAsync(bronzeId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(nextLevel);
+        visitLogRepositoryMock
+            .Setup(r => r.CountDistinctVisitDaysByClientAsync(client.Id, reg, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(12);
+
+        var result = await clientService.GetMyActiveLevelAsync(userId);
+
+        Assert.NotNull(result);
+        Assert.Equal(silverId, result!.NextLevel!.Id);
+        Assert.Equal("Silver", result.NextLevel.Name);
+        Assert.Equal(30, result.NextLevel.ActivateDays);
+        Assert.Equal(18, result.RemainingDaysToNextLevel);
+
+        clientRepositoryMock.VerifyAll();
+        clientLevelRepositoryMock.VerifyAll();
+        levelRepositoryMock.VerifyAll();
+        visitLogRepositoryMock.VerifyAll();
     }
 
     [Theory]

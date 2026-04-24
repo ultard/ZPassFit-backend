@@ -20,6 +20,7 @@ using ZPassFit.Data.Repositories.Employees;
 using ZPassFit.Data.Repositories.Memberships;
 using ZPassFit.Services.Implementations;
 using ZPassFit.Services.Interfaces;
+using ZPassFit.Workers;
 using PredictionService = ZPassFit.Services.Implementations.PredictionService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -62,6 +63,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<DashboardOptions>(builder.Configuration.GetSection(DashboardOptions.SectionName));
+builder.Services.Configure<StaleOpenVisitsWorkerOptions>(
+    builder.Configuration.GetSection(StaleOpenVisitsWorkerOptions.SectionName));
+builder.Services.AddHostedService<StaleOpenVisitsWorker>();
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("Jwt configuration is missing.");

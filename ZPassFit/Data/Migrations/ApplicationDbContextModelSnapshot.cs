@@ -415,6 +415,12 @@ namespace ZPassFit.Data.Migrations
                     b.Property<Guid>("LevelId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("ReceiveDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("RevocationDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ClientId")

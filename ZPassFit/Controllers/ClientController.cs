@@ -35,7 +35,7 @@ public class ClientController(
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Мой уровень лояльности")]
     [EndpointDescription(
-        "Возвращает активный уровень текущего пользователя.")]
+        "Возвращает активный уровень текущего пользователя, следующий уровень в цепочке и сколько посещений осталось до следующего уровня.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MyClientLevelResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

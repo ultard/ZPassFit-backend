@@ -21,6 +21,16 @@ public class LevelRepository(ApplicationDbContext context) : ILevelRepository
             .FirstOrDefaultAsync(l => l.Id == id);
     }
 
+    public async Task<Level?> GetNextByPreviousLevelIdAsync(Guid currentLevelId, CancellationToken cancellationToken = default)
+    {
+        return await context.Levels
+            .AsNoTracking()
+            .Include(l => l.PreviousLevel)
+            .Where(l => l.PreviousLevelId == currentLevelId)
+            .OrderBy(l => l.ActivateDays)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task AddAsync(Level level)
     {
         await context.Levels.AddAsync(level);
