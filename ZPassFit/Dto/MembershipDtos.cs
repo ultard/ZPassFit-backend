@@ -35,17 +35,17 @@ public record PaymentResponse(
 );
 
 public record CreateMembershipPlanRequest(
-    [property: MaxLength(32)] string Name,
-    [property: MaxLength(128)] string Description,
+    [MaxLength(32)] string Name,
+    [MaxLength(128)] string Description,
     int[] Durations,
-    [property: Range(0, int.MaxValue)] int Price
+    [Range(0, int.MaxValue)] int Price
 );
 
 public record UpdateMembershipPlanRequest(
-    [property: MaxLength(32)] string Name,
-    [property: MaxLength(128)] string Description,
+    [MaxLength(32)] string Name,
+    [MaxLength(128)] string Description,
     int[] Durations,
-    [property: Range(0, int.MaxValue)] int Price
+    [Range(0, int.MaxValue)] int Price
 );
 
 /// <summary>
@@ -54,7 +54,7 @@ public record UpdateMembershipPlanRequest(
 public record AdminSetMembershipRequest(
     Guid ClientId,
     Guid PlanId,
-    [property: Range(1, 3650)] int DurationDays
+    [Range(1, 3650)] int DurationDays
 );
 
 /// <summary>

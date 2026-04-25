@@ -12,15 +12,15 @@ public record LevelResponse(
 );
 
 public record CreateLevelRequest(
-    [property: MaxLength(20)] string Name,
-    [property: Range(0, int.MaxValue)] int ActivateDays,
-    [property: Range(0, int.MaxValue)] int GraceDays,
+    [MaxLength(20)] string Name,
+    [Range(0, int.MaxValue)] int ActivateDays,
+    [Range(0, int.MaxValue)] int GraceDays,
     Guid? PreviousLevelId
 );
 
 public record UpdateLevelRequest(
-    [property: MaxLength(20)] string Name,
-    [property: Range(0, int.MaxValue)] int ActivateDays,
-    [property: Range(0, int.MaxValue)] int GraceDays,
+    [MaxLength(20)] string Name,
+    [Range(0, int.MaxValue)] int ActivateDays,
+    [Range(0, int.MaxValue)] int GraceDays,
     Guid? PreviousLevelId
 );
