@@ -9,4 +9,5 @@ public interface IClientLevelRepository
     Task AddAsync(ClientLevel clientLevel);
     Task UpdateAsync(ClientLevel clientLevel);
     Task DeleteAsync(Guid id);
+    Task<int> ResetLevelsWithExpiredGraceAsync(CancellationToken cancellationToken = default);
 }

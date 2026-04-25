@@ -34,15 +34,16 @@ public class ClientService(
 
         LevelResponse? nextLevelDto = null;
         int? remaining = null;
-        if (nextLevelEntity != null)
-        {
-            nextLevelDto = MapLevel(nextLevelEntity);
-            var visitDays = await visitLogRepository.CountDistinctVisitDaysByClientAsync(
-                client.Id,
-                client.RegistrationDate,
-                CancellationToken.None);
-            remaining = Math.Max(0, nextLevelEntity.ActivateDays - visitDays);
-        }
+
+        if (nextLevelEntity == null) return MapClientLevel(clientLevel, nextLevelDto, remaining);
+
+        nextLevelDto = MapLevel(nextLevelEntity);
+        var visitDays = await visitLogRepository.CountDistinctVisitDaysByClientAsync(
+            client.Id,
+            client.RegistrationDate,
+            CancellationToken.None);
+
+        remaining = Math.Max(0, nextLevelEntity.ActivateDays - visitDays);
 
         return MapClientLevel(clientLevel, nextLevelDto, remaining);
     }

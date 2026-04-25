@@ -63,9 +63,14 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<DashboardOptions>(builder.Configuration.GetSection(DashboardOptions.SectionName));
+
 builder.Services.Configure<StaleOpenVisitsWorkerOptions>(
     builder.Configuration.GetSection(StaleOpenVisitsWorkerOptions.SectionName));
+builder.Services.Configure<ExpiredGraceLevelsWorkerOptions>(
+    builder.Configuration.GetSection(ExpiredGraceLevelsWorkerOptions.SectionName));
+
 builder.Services.AddHostedService<StaleOpenVisitsWorker>();
+builder.Services.AddHostedService<ExpiredGraceLevelsWorker>();
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("Jwt configuration is missing.");

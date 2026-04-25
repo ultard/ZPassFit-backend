@@ -41,4 +41,35 @@ public class ClientLevelRepository(ApplicationDbContext context) : IClientLevelR
         context.ClientLevels.Remove(clientLevel);
         await context.SaveChangesAsync();
     }
+
+    public async Task<int> ResetLevelsWithExpiredGraceAsync(CancellationToken cancellationToken = default)
+    {
+        var sql =
+            """
+            WITH last_visits AS (
+                SELECT v."ClientId", MAX(v."EnterDate") AS "LastEnterDate"
+                FROM "VisitLogs" AS v
+                GROUP BY v."ClientId"
+            ),
+            expired AS (
+                SELECT cl."Id", l."PreviousLevelId" AS "PrevLevelId"
+                FROM "ClientLevels" AS cl
+                JOIN "Levels" AS l ON l."Id" = cl."LevelId"
+                LEFT JOIN last_visits AS lv ON lv."ClientId" = cl."ClientId"
+                WHERE cl."RevocationDate" IS NULL
+                  AND l."GraceDays" > 0
+                  AND l."PreviousLevelId" IS NOT NULL
+                  AND COALESCE(lv."LastEnterDate", cl."ReceiveDate")
+                        < (now() AT TIME ZONE 'utc') - (l."GraceDays" * INTERVAL '1 day')
+            )
+            UPDATE "ClientLevels" AS cl
+            SET "LevelId" = e."PrevLevelId",
+                "ReceiveDate" = (now() AT TIME ZONE 'utc'),
+                "RevocationDate" = NULL
+            FROM expired AS e
+            WHERE cl."Id" = e."Id";
+            """;
+
+        return await context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+    }
 }
