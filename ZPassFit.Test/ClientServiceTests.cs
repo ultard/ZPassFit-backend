@@ -421,4 +421,129 @@ public class ClientServiceTests
         Assert.True(ok);
         clientRepositoryMock.VerifyAll();
     }
+
+    [Fact]
+    public async Task CreditBalance_MissingClient_ReturnsNull()
+    {
+        var clientRepo = new Mock<IClientRepository>();
+        var clientLevelRepo = new Mock<IClientLevelRepository>();
+        var levelRepo = new Mock<ILevelRepository>();
+        var visitRepo = new Mock<IVisitLogRepository>();
+        var jwt = new Mock<IJwtTokenService>();
+
+        var id = Guid.NewGuid();
+        clientRepo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((Client?)null);
+
+        var svc = new ClientService(
+            clientRepo.Object,
+            clientLevelRepo.Object,
+            levelRepo.Object,
+            visitRepo.Object,
+            jwt.Object);
+
+        var result = await svc.CreditBalanceAsync(id, 100);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task CreditBalance_AddsToBalance_ReturnsUpdated()
+    {
+        var clientRepo = new Mock<IClientRepository>();
+        var clientLevelRepo = new Mock<IClientLevelRepository>();
+        var levelRepo = new Mock<ILevelRepository>();
+        var visitRepo = new Mock<IVisitLogRepository>();
+        var jwt = new Mock<IJwtTokenService>();
+
+        var id = Guid.NewGuid();
+        var client = new Client
+        {
+            Id = id,
+            UserId = "u",
+            LastName = "A",
+            FirstName = "B",
+            MiddleName = "C",
+            BirthDate = new DateTime(1990, 1, 1),
+            Gender = ClientGender.Unknown,
+            Phone = "+70000000000",
+            Email = "a@b.c",
+            Balance = 500,
+            Bonuses = 0
+        };
+
+        clientRepo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(client);
+        clientRepo
+            .Setup(r => r.UpdateAsync(It.Is<Client>(c => c.Id == id && c.Balance == 1500)))
+            .Returns(Task.CompletedTask);
+
+        var svc = new ClientService(
+            clientRepo.Object,
+            clientLevelRepo.Object,
+            levelRepo.Object,
+            visitRepo.Object,
+            jwt.Object);
+
+        var result = await svc.CreditBalanceAsync(id, 1000);
+
+        Assert.NotNull(result);
+        Assert.Equal(1500, result!.Balance);
+        clientRepo.Verify(r => r.UpdateAsync(It.IsAny<Client>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreditBalance_Overflow_Throws()
+    {
+        var clientRepo = new Mock<IClientRepository>();
+        var clientLevelRepo = new Mock<IClientLevelRepository>();
+        var levelRepo = new Mock<ILevelRepository>();
+        var visitRepo = new Mock<IVisitLogRepository>();
+        var jwt = new Mock<IJwtTokenService>();
+
+        var id = Guid.NewGuid();
+        var client = new Client
+        {
+            Id = id,
+            UserId = "u",
+            LastName = "A",
+            FirstName = "B",
+            MiddleName = "C",
+            BirthDate = new DateTime(1990, 1, 1),
+            Gender = ClientGender.Unknown,
+            Phone = "+70000000000",
+            Email = "a@b.c",
+            Balance = int.MaxValue - 10
+        };
+
+        clientRepo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(client);
+
+        var svc = new ClientService(
+            clientRepo.Object,
+            clientLevelRepo.Object,
+            levelRepo.Object,
+            visitRepo.Object,
+            jwt.Object);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            svc.CreditBalanceAsync(id, 100));
+
+        Assert.Equal("Balance would exceed maximum allowed value.", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreditBalance_NonPositive_Throws()
+    {
+        var clientRepo = new Mock<IClientRepository>();
+        var svc = new ClientService(
+            clientRepo.Object,
+            Mock.Of<IClientLevelRepository>(),
+            Mock.Of<ILevelRepository>(),
+            Mock.Of<IVisitLogRepository>(),
+            Mock.Of<IJwtTokenService>());
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            svc.CreditBalanceAsync(Guid.NewGuid(), 0));
+
+        Assert.Equal("Amount must be positive.", ex.Message);
+        clientRepo.Verify(r => r.GetByIdAsync(It.IsAny<Guid>()), Times.Never);
+    }
 }

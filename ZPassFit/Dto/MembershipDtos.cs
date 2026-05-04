@@ -34,6 +34,18 @@ public record PaymentResponse(
     DateTime? PaymentDate
 );
 
+public record PaymentMethodSettingResponse(
+    PaymentMethod Method,
+    string Code,
+    string DisplayName,
+    bool Enabled,
+    string? Description
+);
+
+public record PaymentMethodsSettingsResponse(
+    IReadOnlyList<PaymentMethodSettingResponse> Methods
+);
+
 public record CreateMembershipPlanRequest(
     [MaxLength(32)] string Name,
     [MaxLength(128)] string Description,

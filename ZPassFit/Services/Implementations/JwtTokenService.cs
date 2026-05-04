@@ -18,6 +18,12 @@ public class JwtTokenService(
 ) : IJwtTokenService
 {
     private readonly JwtOptions _jwt = options.Value;
+    private readonly JwtSecurityTokenHandler _tokenHandler = new();
+    private readonly SigningCredentials _signingCredentials = new(
+        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Value.Secret)),
+        SecurityAlgorithms.HmacSha256
+    );
+
     private const string TokenTypeClaim = "token_type";
     private const string RefreshTokenType = "refresh";
 
@@ -103,8 +109,6 @@ public class JwtTokenService(
         foreach (var role in roles)
             claims.Add(new Claim(ClaimTypes.Role, role));
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Secret));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddMinutes(_jwt.AccessTokenExpirationMinutes);
 
         var token = new JwtSecurityToken(
@@ -112,10 +116,10 @@ public class JwtTokenService(
             audience: _jwt.Audience,
             claims: claims,
             expires: expires,
-            signingCredentials: credentials
+            signingCredentials: _signingCredentials
         );
 
-        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+        var tokenString = _tokenHandler.WriteToken(token);
         return (tokenString, expires);
     }
 
@@ -129,8 +133,6 @@ public class JwtTokenService(
             new(TokenTypeClaim, RefreshTokenType)
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Secret));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddDays(_jwt.RefreshTokenExpirationDays);
 
         var token = new JwtSecurityToken(
@@ -138,19 +140,18 @@ public class JwtTokenService(
             audience: _jwt.Audience,
             claims: claims,
             expires: expires,
-            signingCredentials: credentials
+            signingCredentials: _signingCredentials
         );
 
-        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+        var tokenString = _tokenHandler.WriteToken(token);
         return (tokenString, expires);
     }
 
     private ClaimsPrincipal? ValidateRefreshToken(string refreshToken)
     {
-        var handler = new JwtSecurityTokenHandler();
         try
         {
-            var principal = handler.ValidateToken(
+            var principal = _tokenHandler.ValidateToken(
                 refreshToken,
                 new TokenValidationParameters
                 {
@@ -160,7 +161,7 @@ public class JwtTokenService(
                     ValidateLifetime = true,
                     ValidIssuer = _jwt.Issuer,
                     ValidAudience = _jwt.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Secret)),
+                    IssuerSigningKey = _signingCredentials.Key,
                     ClockSkew = TimeSpan.FromSeconds(30)
                 },
                 out var validatedToken

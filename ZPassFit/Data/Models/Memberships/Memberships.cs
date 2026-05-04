@@ -15,6 +15,7 @@ public class Membership
     public Guid Id { get; set; }
 
     public MembershipStatus Status { get; set; } = MembershipStatus.Active;
+    public bool AutoRenewEnabled { get; set; } = true;
     public DateTime ActivatedDate { get; set; } = DateTime.UtcNow;
     public DateTime ExpireDate { get; set; }
 

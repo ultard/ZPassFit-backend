@@ -5,6 +5,7 @@ using AutoFixture.Xunit3;
 using Microsoft.Extensions.Options;
 using Moq;
 using ZPassFit.Auth;
+using ZPassFit.Payments;
 
 namespace ZPassFit.Test;
 
@@ -31,6 +32,8 @@ public sealed class AutoMoqDataAttribute() : AutoDataAttribute(CreateFixture)
                 }
             )
         );
+
+        fixture.Register(() => Options.Create(new PaymentMethodsOptions()));
 
         fixture.Customizations.Insert(0, new StrictMockBuilder());
 

@@ -36,6 +36,7 @@ public class Client
     public ClientStatus Status { get; set; } = ClientStatus.Pending;
 
     [Range(0, int.MaxValue)] public int Bonuses { get; set; }
+    [Range(0, int.MaxValue)] public int Balance { get; set; }
 
     [MaxLength(100)] public string? Notes { get; set; }
 

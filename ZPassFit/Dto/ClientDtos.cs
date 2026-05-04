@@ -15,7 +15,12 @@ public record ClientResponse(
     DateTime RegistrationDate,
     ClientStatus Status,
     int Bonuses,
+    int Balance,
     string? Notes
+);
+
+public record CreditClientBalanceRequest(
+    [Range(1, int.MaxValue)] int Amount
 );
 
 /// <summary>

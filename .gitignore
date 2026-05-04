@@ -8,4 +8,6 @@ riderModule.iml
 
 TestResults
 
+BenchmarkDotNet.Artifacts/
+
 .env

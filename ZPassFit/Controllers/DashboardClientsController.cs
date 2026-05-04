@@ -96,4 +96,25 @@ public class DashboardClientsController(IClientService clientService) : Controll
         var ok = await clientService.UnblockAsync(id);
         return ok ? Results.NoContent() : Results.NotFound();
     }
+
+    [HttpPost("{id:guid}/balance/credit")]
+    [EndpointSummary("Зачислить на баланс")]
+    [EndpointDescription("Увеличивает внутренний баланс клиента (пополнение через сотрудника).")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ClientResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> CreditBalance([FromRoute] Guid id, [FromBody] CreditClientBalanceRequest request)
+    {
+        try
+        {
+            var client = await clientService.CreditBalanceAsync(id, request.Amount);
+            return client == null ? Results.NotFound() : Results.Ok(client);
+        }
+        catch (InvalidOperationException e)
+        {
+            return Results.BadRequest(new { error = e.Message });
+        }
+    }
 }

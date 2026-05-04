@@ -48,15 +48,18 @@ public class PaymentRepository(ApplicationDbContext context) : IPaymentRepositor
         DateTime toUtcExclusive
     )
     {
-        var query = context.Payments.Where(p =>
+        var query = context.Payments.AsNoTracking().Where(p =>
             p.Status == PaymentStatus.Completed
             && (p.PaymentDate ?? p.CreateDate) >= fromUtcInclusive
             && (p.PaymentDate ?? p.CreateDate) < toUtcExclusive
         );
 
-        var count = await query.CountAsync();
-        var total = await query.SumAsync(p => (long)p.Amount);
-        return (count, total);
+        var row = await query
+            .GroupBy(_ => 1)
+            .Select(g => new { Count = g.Count(), Total = g.Sum(p => (long)p.Amount) })
+            .SingleOrDefaultAsync();
+
+        return row is null ? (0, 0L) : (row.Count, row.Total);
     }
 
     public async Task<IReadOnlyList<ClubDayRevenueRow>> GetCompletedPaymentAmountsByClubDayAsync(

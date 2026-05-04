@@ -1,7 +1,9 @@
+using Microsoft.Extensions.Options;
 using ZPassFit.Data.Models.Memberships;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Memberships;
 using ZPassFit.Dto;
+using ZPassFit.Payments;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Services.Implementations;
@@ -10,7 +12,8 @@ public class MembershipService(
     IClientRepository clientRepository,
     IMembershipPlanRepository planRepository,
     IMembershipRepository membershipRepository,
-    IPaymentRepository paymentRepository
+    IPaymentRepository paymentRepository,
+    IOptions<PaymentMethodsOptions> paymentMethodsOptions
 ) : IMembershipService
 {
     public async Task<IEnumerable<MembershipPlanResponse>> GetPlansAsync()
@@ -47,6 +50,17 @@ public class MembershipService(
         if (plan.Durations.Length > 0 && !plan.Durations.Contains(request.DurationDays))
             throw new InvalidOperationException("Selected duration is not allowed for this plan.");
 
+        var pm = paymentMethodsOptions.Value;
+        var methodAllowed = request.Method switch
+        {
+            PaymentMethod.Cash => pm.CashEnabled,
+            PaymentMethod.Card => pm.CardEnabled,
+            PaymentMethod.Balance => pm.BalanceEnabled,
+            _ => false
+        };
+        if (!methodAllowed)
+            throw new InvalidOperationException("This payment method is disabled.");
+
         var now = DateTime.UtcNow;
         var membership = await membershipRepository.GetByClientIdAsync(client.Id);
 
@@ -57,6 +71,7 @@ public class MembershipService(
                 ClientId = client.Id,
                 PlanId = plan.Id,
                 Status = MembershipStatus.Active,
+                AutoRenewEnabled = true,
                 ActivatedDate = now,
                 ExpireDate = now.AddDays(request.DurationDays)
             };
@@ -66,9 +81,19 @@ public class MembershipService(
         {
             membership.PlanId = plan.Id;
             membership.Status = MembershipStatus.Active;
+            membership.AutoRenewEnabled = true;
             membership.ActivatedDate = now;
             membership.ExpireDate = now.AddDays(request.DurationDays);
             await membershipRepository.UpdateAsync(membership);
+        }
+
+        if (request.Method == PaymentMethod.Balance)
+        {
+            if (client.Balance < plan.Price)
+                throw new InvalidOperationException("Not enough balance.");
+
+            client.Balance -= plan.Price;
+            await clientRepository.UpdateAsync(client);
         }
 
         var payment = new Payment
@@ -81,6 +106,25 @@ public class MembershipService(
             EmployeeId = null
         };
         await paymentRepository.AddAsync(payment);
+
+        return MapMembership(membership);
+    }
+
+    public async Task<MembershipResponse> CancelMembershipAsync(string userId)
+    {
+        var client = await clientRepository.GetByUserIdAsync(userId)
+                     ?? throw new InvalidOperationException("Client profile not found.");
+
+        var membership = await membershipRepository.GetByClientIdAsync(client.Id)
+                         ?? throw new InvalidOperationException("Active membership not found.");
+
+        var now = DateTime.UtcNow;
+
+        membership.AutoRenewEnabled = false;
+        if (membership.ExpireDate <= now)
+            membership.Status = MembershipStatus.Expired;
+
+        await membershipRepository.UpdateAsync(membership);
 
         return MapMembership(membership);
     }
@@ -160,6 +204,7 @@ public class MembershipService(
                 ClientId = client.Id,
                 PlanId = plan.Id,
                 Status = MembershipStatus.Active,
+                AutoRenewEnabled = true,
                 ActivatedDate = now,
                 ExpireDate = now.AddDays(request.DurationDays)
             };
@@ -169,6 +214,7 @@ public class MembershipService(
         {
             membership.PlanId = plan.Id;
             membership.Status = MembershipStatus.Active;
+            membership.AutoRenewEnabled = true;
             membership.ActivatedDate = now;
             membership.ExpireDate = now.AddDays(request.DurationDays);
             await membershipRepository.UpdateAsync(membership);
@@ -192,7 +238,10 @@ public class MembershipService(
         }
 
         if (request.Status is { } status)
+        {
             membership.Status = status;
+            membership.AutoRenewEnabled = status == MembershipStatus.Active;
+        }
 
         if (request.ActivatedDate != null || request.ExpireDate != null)
         {

@@ -12,6 +12,7 @@ using ZPassFit.Data.Audit;
 using ZPassFit.Data.Dev;
 using ZPassFit.Data.Models;
 using ZPassFit.OpenApi;
+using ZPassFit.Payments;
 using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Audit;
 using ZPassFit.Data.Repositories.Auth;
@@ -63,14 +64,19 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<DashboardOptions>(builder.Configuration.GetSection(DashboardOptions.SectionName));
+builder.Services.Configure<PaymentMethodsOptions>(
+    builder.Configuration.GetSection(PaymentMethodsOptions.SectionName));
 
 builder.Services.Configure<StaleOpenVisitsWorkerOptions>(
     builder.Configuration.GetSection(StaleOpenVisitsWorkerOptions.SectionName));
 builder.Services.Configure<ExpiredGraceLevelsWorkerOptions>(
     builder.Configuration.GetSection(ExpiredGraceLevelsWorkerOptions.SectionName));
+builder.Services.Configure<MembershipAutoRenewWorkerOptions>(
+    builder.Configuration.GetSection(MembershipAutoRenewWorkerOptions.SectionName));
 
 builder.Services.AddHostedService<StaleOpenVisitsWorker>();
 builder.Services.AddHostedService<ExpiredGraceLevelsWorker>();
+builder.Services.AddHostedService<MembershipAutoRenewWorker>();
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("Jwt configuration is missing.");

@@ -212,6 +212,7 @@ public static class DevelopmentSeed
                         Email = user.Email ?? "client2@dev.local",
                         Status = ClientStatus.Active,
                         Bonuses = 40,
+                        Balance = 20000,
                         Notes = "Dev seed client #2"
                     },
                     "client3@dev.local" => new Client
@@ -227,6 +228,7 @@ public static class DevelopmentSeed
                         Email = user.Email ?? "client3@dev.local",
                         Status = ClientStatus.Active,
                         Bonuses = 220,
+                        Balance = 50000,
                         Notes = "Dev seed client #3"
                     },
                     _ => new Client
@@ -242,6 +244,7 @@ public static class DevelopmentSeed
                         Email = user.Email ?? "client@dev.local",
                         Status = ClientStatus.Active,
                         Bonuses = 120,
+                        Balance = 30000,
                         Notes = "Dev seed client"
                     }
                 };
@@ -382,6 +385,7 @@ public static class DevelopmentSeed
             Email = user.Email ?? "client@dev.local",
             Status = ClientStatus.Active,
             Bonuses = 120,
+            Balance = 30000,
             Notes = "Dev seed client"
         };
 

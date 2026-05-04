@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ZPassFit.Dashboard;
 using ZPassFit.Data.Repositories;
@@ -10,13 +11,8 @@ using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Services.Implementations;
 
-public class DashboardService(
-    IOptions<DashboardOptions> dashboardOptions,
-    IVisitLogRepository visitLogRepository,
-    IPaymentRepository paymentRepository,
-    IClientRepository clientRepository,
-    IMembershipRepository membershipRepository
-) : IDashboardService
+public class DashboardService(IOptions<DashboardOptions> dashboardOptions, IServiceScopeFactory scopeFactory)
+    : IDashboardService
 {
     /// <summary>Относительное изменение ниже этого порога считаем «без изменений» для стрелки направления.</summary>
     private const decimal DirectionFlatPercentThreshold = 0.05m;
@@ -44,13 +40,23 @@ public class DashboardService(
         var (previousMonthStartUtc, previousMonthEndUtcExclusive) =
             DashboardPeriodCalculator.GetPreviousMonthUtcRange(clubTimeZone, selectedYear, selectedMonth);
 
-        var kpiData = await LoadKpiDataAsync(
+        var kpiTask = LoadKpiDataAsync(
             selectedMonthStartUtc,
             selectedMonthEndUtcExclusive,
             previousMonthStartUtc,
             previousMonthEndUtcExclusive,
             cancellationToken
         );
+        var chartTask = LoadChartSourceDataAsync(
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive,
+            options.TimeZoneId,
+            cancellationToken
+        );
+
+        await Task.WhenAll(kpiTask, chartTask);
+
+        var kpiData = await kpiTask;
 
         var kpis = new[]
         {
@@ -78,12 +84,7 @@ public class DashboardService(
             )
         };
 
-        var chartSource = await LoadChartSourceDataAsync(
-            selectedMonthStartUtc,
-            selectedMonthEndUtcExclusive,
-            options.TimeZoneId,
-            cancellationToken
-        );
+        var chartSource = await chartTask;
 
         var visitCountByLocalDay = chartSource.VisitCountsByLocalDay.ToDictionary(row => row.Date, row => row.Count);
         var newClientCountByLocalDay = chartSource.NewClientCountsByLocalDay.ToDictionary(
@@ -162,55 +163,106 @@ public class DashboardService(
         CancellationToken cancellationToken
     )
     {
-        var visitsSelected = await visitLogRepository.CountVisitsEnteringBetweenAsync(
-            selectedMonthStartUtc,
-            selectedMonthEndUtcExclusive
-        );
-        var visitsPrevious = await visitLogRepository.CountVisitsEnteringBetweenAsync(
-            previousMonthStartUtc,
-            previousMonthEndUtcExclusive
-        );
-
-        var paymentsSelected = await paymentRepository.GetCompletedPaymentsSummaryBetweenAsync(
-            selectedMonthStartUtc,
-            selectedMonthEndUtcExclusive
-        );
-        var paymentsPrevious = await paymentRepository.GetCompletedPaymentsSummaryBetweenAsync(
-            previousMonthStartUtc,
-            previousMonthEndUtcExclusive
-        );
-
-        var newClientsSelected = await clientRepository.CountRegisteredBetweenAsync(
-            selectedMonthStartUtc,
-            selectedMonthEndUtcExclusive,
+        // Отдельный scope на запрос: один DbContext не поддерживает параллельные операции.
+        var visitsSelectedTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IVisitLogRepository>()
+                    .CountVisitsEnteringBetweenAsync(selectedMonthStartUtc, selectedMonthEndUtcExclusive),
             cancellationToken
         );
-        var newClientsPrevious = await clientRepository.CountRegisteredBetweenAsync(
-            previousMonthStartUtc,
-            previousMonthEndUtcExclusive,
+        var visitsPreviousTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IVisitLogRepository>()
+                    .CountVisitsEnteringBetweenAsync(previousMonthStartUtc, previousMonthEndUtcExclusive),
             cancellationToken
         );
 
-        var membershipsSelected = await membershipRepository.CountActivatedBetweenAsync(
-            selectedMonthStartUtc,
-            selectedMonthEndUtcExclusive,
+        var paymentsSelectedTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IPaymentRepository>()
+                    .GetCompletedPaymentsSummaryBetweenAsync(
+                        selectedMonthStartUtc,
+                        selectedMonthEndUtcExclusive
+                    ),
             cancellationToken
         );
-        var membershipsPrevious = await membershipRepository.CountActivatedBetweenAsync(
-            previousMonthStartUtc,
-            previousMonthEndUtcExclusive,
+        var paymentsPreviousTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IPaymentRepository>()
+                    .GetCompletedPaymentsSummaryBetweenAsync(previousMonthStartUtc, previousMonthEndUtcExclusive),
             cancellationToken
+        );
+
+        var newClientsSelectedTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IClientRepository>()
+                    .CountRegisteredBetweenAsync(
+                        selectedMonthStartUtc,
+                        selectedMonthEndUtcExclusive,
+                        cancellationToken
+                    ),
+            cancellationToken
+        );
+        var newClientsPreviousTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IClientRepository>()
+                    .CountRegisteredBetweenAsync(
+                        previousMonthStartUtc,
+                        previousMonthEndUtcExclusive,
+                        cancellationToken
+                    ),
+            cancellationToken
+        );
+
+        var membershipsSelectedTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IMembershipRepository>()
+                    .CountActivatedBetweenAsync(
+                        selectedMonthStartUtc,
+                        selectedMonthEndUtcExclusive,
+                        cancellationToken
+                    ),
+            cancellationToken
+        );
+        var membershipsPreviousTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IMembershipRepository>()
+                    .CountActivatedBetweenAsync(
+                        previousMonthStartUtc,
+                        previousMonthEndUtcExclusive,
+                        cancellationToken
+                    ),
+            cancellationToken
+        );
+
+        await Task.WhenAll(
+            visitsSelectedTask,
+            visitsPreviousTask,
+            paymentsSelectedTask,
+            paymentsPreviousTask,
+            newClientsSelectedTask,
+            newClientsPreviousTask,
+            membershipsSelectedTask,
+            membershipsPreviousTask
         );
 
         return new DashboardKpiData(
-            visitsSelected,
-            visitsPrevious,
-            paymentsSelected,
-            paymentsPrevious,
-            newClientsSelected,
-            newClientsPrevious,
-            membershipsSelected,
-            membershipsPrevious
+            await visitsSelectedTask,
+            await visitsPreviousTask,
+            await paymentsSelectedTask,
+            await paymentsPreviousTask,
+            await newClientsSelectedTask,
+            await newClientsPreviousTask,
+            await membershipsSelectedTask,
+            await membershipsPreviousTask
         );
     }
 
@@ -221,37 +273,73 @@ public class DashboardService(
         CancellationToken cancellationToken
     )
     {
-        // See note in LoadKpiDataAsync about DbContext concurrency.
-        var visitCounts = await visitLogRepository.GetVisitCountsByClubDayAsync(
-            selectedMonthStartUtc,
-            selectedMonthEndUtcExclusive,
-            timeZoneId,
+        var visitCountsTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IVisitLogRepository>()
+                    .GetVisitCountsByClubDayAsync(
+                        selectedMonthStartUtc,
+                        selectedMonthEndUtcExclusive,
+                        timeZoneId,
+                        cancellationToken
+                    ),
             cancellationToken
         );
-        var paymentAmounts = await paymentRepository.GetCompletedPaymentAmountsByClubDayAsync(
-            selectedMonthStartUtc,
-            selectedMonthEndUtcExclusive,
-            timeZoneId,
+        var paymentAmountsTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IPaymentRepository>()
+                    .GetCompletedPaymentAmountsByClubDayAsync(
+                        selectedMonthStartUtc,
+                        selectedMonthEndUtcExclusive,
+                        timeZoneId,
+                        cancellationToken
+                    ),
             cancellationToken
         );
-        var newClientCounts = await clientRepository.GetRegistrationCountsByClubDayAsync(
-            selectedMonthStartUtc,
-            selectedMonthEndUtcExclusive,
-            timeZoneId,
+        var newClientCountsTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IClientRepository>()
+                    .GetRegistrationCountsByClubDayAsync(
+                        selectedMonthStartUtc,
+                        selectedMonthEndUtcExclusive,
+                        timeZoneId,
+                        cancellationToken
+                    ),
             cancellationToken
         );
-        var activationsByPlan = await membershipRepository.CountActivationsByPlanBetweenAsync(
-            selectedMonthStartUtc,
-            selectedMonthEndUtcExclusive,
+        var activationsByPlanTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IMembershipRepository>()
+                    .CountActivationsByPlanBetweenAsync(
+                        selectedMonthStartUtc,
+                        selectedMonthEndUtcExclusive,
+                        cancellationToken
+                    ),
             cancellationToken
         );
 
+        await Task.WhenAll(visitCountsTask, paymentAmountsTask, newClientCountsTask, activationsByPlanTask);
+
         return new DashboardChartSourceData(
-            visitCounts,
-            paymentAmounts,
-            newClientCounts,
-            activationsByPlan
+            await visitCountsTask,
+            await paymentAmountsTask,
+            await newClientCountsTask,
+            await activationsByPlanTask
         );
+    }
+
+    private static async Task<T> RunInScopeAsync<T>(
+        IServiceScopeFactory scopeFactory,
+        Func<IServiceProvider, Task<T>> work,
+        CancellationToken cancellationToken
+    )
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        cancellationToken.ThrowIfCancellationRequested();
+        return await work(scope.ServiceProvider);
     }
 
     private static DashboardKpiItem BuildKpi(

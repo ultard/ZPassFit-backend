@@ -11,11 +11,11 @@ COPY ["ZPassFit/ZPassFit.csproj", "ZPassFit/"]
 RUN dotnet restore "ZPassFit/ZPassFit.csproj"
 COPY . .
 WORKDIR "/src/ZPassFit"
-RUN dotnet build "./ZPassFit.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "ZPassFit.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./ZPassFit.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "ZPassFit.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app

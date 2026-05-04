@@ -131,8 +131,26 @@ public class ClientService(
             c.RegistrationDate,
             c.Status,
             c.Bonuses,
+            c.Balance,
             c.Notes
         );
+    }
+
+    public async Task<ClientResponse?> CreditBalanceAsync(Guid clientId, int amount)
+    {
+        if (amount <= 0)
+            throw new InvalidOperationException("Amount must be positive.");
+
+        var client = await clientRepository.GetByIdAsync(clientId);
+        if (client == null) return null;
+
+        var sum = (long)client.Balance + amount;
+        if (sum > int.MaxValue)
+            throw new InvalidOperationException("Balance would exceed maximum allowed value.");
+
+        client.Balance = (int)sum;
+        await clientRepository.UpdateAsync(client);
+        return Map(client);
     }
 
     private static MyClientLevelResponse MapClientLevel(

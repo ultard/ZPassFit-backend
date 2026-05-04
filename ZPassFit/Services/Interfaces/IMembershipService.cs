@@ -8,6 +8,7 @@ public interface IMembershipService
     Task<MembershipPlanResponse?> GetPlanByIdAsync(Guid id);
     Task<MembershipResponse?> GetMyMembershipAsync(string userId);
     Task<MembershipResponse> BuyMembershipAsync(string userId, BuyMembershipRequest request);
+    Task<MembershipResponse> CancelMembershipAsync(string userId);
     Task<IEnumerable<PaymentResponse>> GetMyPaymentsAsync(string userId);
 
     Task<MembershipPlanResponse> CreatePlanAsync(CreateMembershipPlanRequest request);

@@ -1,10 +1,12 @@
 using AutoFixture.Xunit3;
+using Microsoft.Extensions.Options;
 using Moq;
 using ZPassFit.Data.Models.Clients;
 using ZPassFit.Data.Models.Memberships;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Memberships;
 using ZPassFit.Dto;
+using ZPassFit.Payments;
 using ZPassFit.Services.Implementations;
 
 namespace ZPassFit.Test;
@@ -113,6 +115,60 @@ public class MembershipServiceTests
         Assert.Equal("Membership plan not found.", exception.Message);
         clientRepositoryMock.VerifyAll();
         membershipPlanRepositoryMock.VerifyAll();
+    }
+
+    [Fact]
+    public async Task BuyMembership_DisabledMethod_Throws()
+    {
+        var clientRepo = new Mock<IClientRepository>();
+        var planRepo = new Mock<IMembershipPlanRepository>();
+        var membershipRepo = new Mock<IMembershipRepository>();
+        var paymentRepo = new Mock<IPaymentRepository>();
+
+        var userId = "u1";
+        var planId = Guid.NewGuid();
+        var client = new Client
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            LastName = "Ivanov",
+            FirstName = "Ivan",
+            MiddleName = "Ivanovich",
+            BirthDate = new DateTime(2000, 1, 2),
+            Gender = ClientGender.Male,
+            Phone = "+70000000000",
+            Email = "ivan@example.com"
+        };
+
+        var plan = new MembershipPlan
+        {
+            Id = planId,
+            Name = "Base",
+            Description = "Standard access",
+            Durations = [30],
+            Price = 1500
+        };
+
+        clientRepo.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
+        planRepo.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync(plan);
+
+        var svc = new MembershipService(
+            clientRepo.Object,
+            planRepo.Object,
+            membershipRepo.Object,
+            paymentRepo.Object,
+            Options.Create(
+                new PaymentMethodsOptions
+                {
+                    CashEnabled = false,
+                    CardEnabled = true,
+                    BalanceEnabled = true
+                }));
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            svc.BuyMembershipAsync(userId, new BuyMembershipRequest(planId, 30, PaymentMethod.Cash)));
+
+        Assert.Equal("This payment method is disabled.", exception.Message);
     }
 
     [Theory]

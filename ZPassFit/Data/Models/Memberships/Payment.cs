@@ -12,7 +12,8 @@ public enum PaymentStatus
 public enum PaymentMethod
 {
     Cash,
-    Card
+    Card,
+    Balance
 }
 
 public class Payment
