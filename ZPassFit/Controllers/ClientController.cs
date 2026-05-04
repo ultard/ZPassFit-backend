@@ -31,6 +31,29 @@ public class ClientController(
         return client == null ? Results.NotFound() : Results.Ok(client);
     }
 
+    [HttpPut("profile")]
+    [Authorize(Roles = Roles.Client)]
+    [EndpointSummary("Обновить профиль")]
+    [EndpointDescription("Изменяет ФИО, дату рождения и пол текущего клиента.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ClientResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> UpdateProfile([FromBody] UpdateClientProfileRequest request)
+    {
+        var user = HttpContext.GetRequiredCurrentApplicationUser();
+
+        try
+        {
+            var client = await clientService.UpdateMyProfileAsync(user.Id, request);
+            return client == null ? Results.NotFound() : Results.Ok(client);
+        }
+        catch (InvalidOperationException e)
+        {
+            return Results.BadRequest(new { error = e.Message });
+        }
+    }
+
     [HttpGet("level")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Мой уровень лояльности")]

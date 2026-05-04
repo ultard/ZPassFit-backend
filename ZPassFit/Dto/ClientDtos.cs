@@ -23,6 +23,14 @@ public record CreditClientBalanceRequest(
     [Range(1, int.MaxValue)] int Amount
 );
 
+public record UpdateClientProfileRequest(
+    [MaxLength(100)][MinLength(1)] string LastName,
+    [MaxLength(100)][MinLength(1)] string FirstName,
+    [MaxLength(100)][MinLength(1)] string MiddleName,
+    DateTime BirthDate,
+    ClientGender Gender
+);
+
 /// <summary>
 /// Краткая карточка клиента для списков в дашборде.
 /// </summary>

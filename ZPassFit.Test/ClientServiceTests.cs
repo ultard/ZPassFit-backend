@@ -546,4 +546,57 @@ public class ClientServiceTests
         Assert.Equal("Amount must be positive.", ex.Message);
         clientRepo.Verify(r => r.GetByIdAsync(It.IsAny<Guid>()), Times.Never);
     }
+
+    [Fact]
+    public async Task UpdateMyProfile_UpdatesFields()
+    {
+        var clientRepo = new Mock<IClientRepository>();
+        var clientLevelRepo = new Mock<IClientLevelRepository>();
+        var levelRepo = new Mock<ILevelRepository>();
+        var visitRepo = new Mock<IVisitLogRepository>();
+        var jwt = new Mock<IJwtTokenService>();
+
+        var userId = "user-1";
+        var client = new Client
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            LastName = "Old",
+            FirstName = "Old",
+            MiddleName = "Old",
+            BirthDate = new DateTime(1990, 5, 1, 0, 0, 0, DateTimeKind.Utc),
+            Gender = ClientGender.Male,
+            Phone = "+70000000000",
+            Email = "a@b.c"
+        };
+
+        clientRepo.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
+        clientRepo
+            .Setup(r => r.UpdateAsync(It.Is<Client>(c =>
+                c.LastName == "Новиков"
+                && c.FirstName == "Иван"
+                && c.MiddleName == "Петрович"
+                && c.Gender == ClientGender.Female)))
+            .Returns(Task.CompletedTask);
+
+        var svc = new ClientService(
+            clientRepo.Object,
+            clientLevelRepo.Object,
+            levelRepo.Object,
+            visitRepo.Object,
+            jwt.Object);
+
+        var result = await svc.UpdateMyProfileAsync(
+            userId,
+            new UpdateClientProfileRequest(
+                "Новиков",
+                "Иван",
+                "Петрович",
+                new DateTime(1991, 6, 15, 0, 0, 0, DateTimeKind.Utc),
+                ClientGender.Female));
+
+        Assert.NotNull(result);
+        Assert.Equal("Новиков", result!.LastName);
+        clientRepo.Verify(r => r.UpdateAsync(It.IsAny<Client>()), Times.Once);
+    }
 }

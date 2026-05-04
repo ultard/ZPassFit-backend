@@ -153,6 +153,25 @@ public class ClientService(
         return Map(client);
     }
 
+    public async Task<ClientResponse?> UpdateMyProfileAsync(string userId, UpdateClientProfileRequest request)
+    {
+        var client = await clientRepository.GetByUserIdAsync(userId);
+        if (client == null) return null;
+
+        var birthDay = request.BirthDate.Date;
+        if (birthDay > DateTime.UtcNow.Date)
+            throw new InvalidOperationException("Birth date cannot be in the future.");
+
+        client.LastName = request.LastName.Trim();
+        client.FirstName = request.FirstName.Trim();
+        client.MiddleName = request.MiddleName.Trim();
+        client.BirthDate = DateTime.SpecifyKind(birthDay, DateTimeKind.Utc);
+        client.Gender = request.Gender;
+
+        await clientRepository.UpdateAsync(client);
+        return Map(client);
+    }
+
     private static MyClientLevelResponse MapClientLevel(
         ClientLevel cl,
         LevelResponse? nextLevel,
