@@ -7,18 +7,18 @@ using Scalar.AspNetCore;
 using ZPassFit.Auth;
 using ZPassFit.Dashboard;
 using ZPassFit.Data;
-using ZPassFit.Middleware;
 using ZPassFit.Data.Audit;
 using ZPassFit.Data.Dev;
 using ZPassFit.Data.Models;
-using ZPassFit.OpenApi;
-using ZPassFit.Payments;
 using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Audit;
 using ZPassFit.Data.Repositories.Auth;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Employees;
 using ZPassFit.Data.Repositories.Memberships;
+using ZPassFit.Middleware;
+using ZPassFit.OpenApi;
+using ZPassFit.Payments;
 using ZPassFit.Services.Implementations;
 using ZPassFit.Services.Interfaces;
 using ZPassFit.Workers;
@@ -28,12 +28,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<AuditSaveChangesInterceptor>();
-builder.Services.AddDbContext<ApplicationDbContext>(
-    (sp, options) =>
-    {
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
-        options.AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>());
-    });
+builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>());
+});
 
 builder.Services.AddCors(options =>
 {
@@ -41,20 +40,16 @@ builder.Services.AddCors(options =>
     {
         var origins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>();
         if (origins is { Length: > 0 })
-        {
             policy
                 .WithOrigins(origins)
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials();
-        }
         else
-        {
             policy
                 .AllowAnyOrigin()
                 .AllowAnyHeader()
                 .AllowAnyMethod();
-        }
     });
 });
 
@@ -79,7 +74,7 @@ builder.Services.AddHostedService<ExpiredGraceLevelsWorker>();
 builder.Services.AddHostedService<MembershipAutoRenewWorker>();
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
-    ?? throw new InvalidOperationException("Jwt configuration is missing.");
+                 ?? throw new InvalidOperationException("Jwt configuration is missing.");
 if (jwtOptions.Secret.Length < 32)
     throw new InvalidOperationException("Jwt:Secret must be at least 32 characters.");
 
@@ -130,7 +125,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();
 builder.Services.AddGrpcClient<ZPassFit.Protos.PredictionService.PredictionServiceClient>(options =>
 {
-    var predictionServiceUrl = 
+    var predictionServiceUrl =
         builder.Configuration["Grpc:PredictionServiceUrl"]
         ?? throw new ArgumentNullException();
 
@@ -139,10 +134,7 @@ builder.Services.AddGrpcClient<ZPassFit.Protos.PredictionService.PredictionServi
 
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 builder.Services.AddControllers();
-builder.Services.AddOpenApi(options =>
-{
-    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
-});
+builder.Services.AddOpenApi(options => { options.AddDocumentTransformer<BearerSecuritySchemeTransformer>(); });
 builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();

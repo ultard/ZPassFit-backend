@@ -19,7 +19,7 @@ public interface IClientService
     );
 
     /// <summary>
-    /// Зачисляет сумму на баланс клиента (касса / ручное пополнение).
+    ///     Зачисляет сумму на баланс клиента (касса / ручное пополнение).
     /// </summary>
     /// <returns>null, если клиент не найден.</returns>
     Task<ClientResponse?> CreditBalanceAsync(Guid clientId, int amount);

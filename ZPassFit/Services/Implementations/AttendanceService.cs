@@ -93,8 +93,14 @@ public class AttendanceService(
         return MapVisit(open);
     }
 
-    private static VisitLogResponse MapVisit(VisitLog v)
+    private static VisitLogResponse MapVisit(VisitLog visitLog)
     {
-        return new VisitLogResponse(v.Id, v.EnterDate, v.LeaveDate, v.MembershipId, v.ClientId);
+        return new VisitLogResponse(
+            visitLog.Id,
+            visitLog.EnterDate,
+            visitLog.LeaveDate,
+            visitLog.MembershipId,
+            visitLog.ClientId
+        );
     }
 }

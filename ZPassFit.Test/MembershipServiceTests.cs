@@ -73,7 +73,8 @@ public class MembershipServiceTests
         clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync((Client?)null);
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(Guid.NewGuid(), 30, PaymentMethod.Cash)));
+            membershipService.BuyMembershipAsync(userId,
+                new BuyMembershipRequest(Guid.NewGuid(), 30, PaymentMethod.Cash)));
 
         Assert.Equal("Client profile not found.", exception.Message);
         clientRepositoryMock.VerifyAll();

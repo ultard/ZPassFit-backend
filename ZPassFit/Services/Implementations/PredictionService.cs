@@ -18,16 +18,10 @@ public class PredictionService(
     public async Task<ChurnPredictionResponse?> PredictChurnAsync(Guid clientId, CancellationToken cancellationToken)
     {
         var client = await clientRepository.GetByIdAsync(clientId);
-        if (client == null)
-        {
-            return null;
-        }
+        if (client == null) return null;
 
         var membership = await membershipRepository.GetByClientIdAsync(clientId);
-        if (membership == null)
-        {
-            return null;
-        }
+        if (membership == null) return null;
 
         var visitHistory = (await visitLogRepository.GetVisitHistoryByClientIdAsync(clientId)).ToList();
         var now = DateTime.UtcNow;
@@ -45,7 +39,8 @@ public class PredictionService(
             ? Math.Max(0, (int)(now.Date - lastVisitDate.Value.Date).TotalDays)
             : 365;
 
-        var membershipDurationDays = Math.Max(1, (int)(membership.ExpireDate.Date - membership.ActivatedDate.Date).TotalDays);
+        var membershipDurationDays =
+            Math.Max(1, (int)(membership.ExpireDate.Date - membership.ActivatedDate.Date).TotalDays);
         var membershipDaysToExpire = Math.Max(0, (int)(membership.ExpireDate.Date - now.Date).TotalDays);
 
         var grpcRequest = new PredictChurnRequest
@@ -64,7 +59,8 @@ public class PredictionService(
 
         try
         {
-            var grpcResponse = await predictionClient.PredictChurnAsync(grpcRequest, cancellationToken: cancellationToken);
+            var grpcResponse =
+                await predictionClient.PredictChurnAsync(grpcRequest, cancellationToken: cancellationToken);
             return new ChurnPredictionResponse(grpcResponse.Prediction, grpcResponse.Probability);
         }
         catch (Exception exception)
@@ -76,10 +72,7 @@ public class PredictionService(
     private static int CalculateAge(DateTime birthDate, DateTime now)
     {
         var age = now.Year - birthDate.Year;
-        if (birthDate.Date > now.Date.AddYears(-age))
-        {
-            age--;
-        }
+        if (birthDate.Date > now.Date.AddYears(-age)) age--;
 
         return Math.Max(0, age);
     }

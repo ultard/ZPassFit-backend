@@ -66,9 +66,11 @@ public class ClientServiceTests
         Assert.Null(result);
         clientRepositoryMock.VerifyAll();
         clientLevelRepositoryMock.VerifyAll();
-        levelRepositoryMock.Verify(r => r.GetNextByPreviousLevelIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        levelRepositoryMock.Verify(
+            r => r.GetNextByPreviousLevelIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
         visitLogRepositoryMock.Verify(
-            r => r.CountDistinctVisitDaysByClientAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            r => r.CountDistinctVisitDaysByClientAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -108,9 +110,11 @@ public class ClientServiceTests
         Assert.Null(result);
         clientRepositoryMock.VerifyAll();
         clientLevelRepositoryMock.VerifyAll();
-        levelRepositoryMock.Verify(r => r.GetNextByPreviousLevelIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        levelRepositoryMock.Verify(
+            r => r.GetNextByPreviousLevelIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
         visitLogRepositoryMock.Verify(
-            r => r.CountDistinctVisitDaysByClientAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            r => r.CountDistinctVisitDaysByClientAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -191,7 +195,8 @@ public class ClientServiceTests
         clientLevelRepositoryMock.VerifyAll();
         levelRepositoryMock.VerifyAll();
         Mock.Get(visitLogRepository).Verify(
-            r => r.CountDistinctVisitDaysByClientAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            r => r.CountDistinctVisitDaysByClientAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -315,8 +320,8 @@ public class ClientServiceTests
 
         var result = await clientService.SearchPagedAsync(
             "ив",
-            page: 2,
-            pageSize: 10,
+            2,
+            10,
             TestContext.Current.CancellationToken);
 
         Assert.Equal(2, result.Page);
@@ -364,7 +369,8 @@ public class ClientServiceTests
         clientRepositoryMock
             .Setup(r => r.UpdateAsync(It.Is<Client>(c => c.Status == ClientStatus.Blocked)))
             .Returns(Task.CompletedTask);
-        jwtMock.Setup(j => j.RevokeAllRefreshTokensAsync(userId, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        jwtMock.Setup(j => j.RevokeAllRefreshTokensAsync(userId, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var ok = await clientService.BlockAsync(clientId, TestContext.Current.CancellationToken);
 

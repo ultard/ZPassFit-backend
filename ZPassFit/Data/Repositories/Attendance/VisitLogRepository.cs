@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using ZPassFit.Data.Models.Attendance;
-using ZPassFit.Data.Repositories;
 
 namespace ZPassFit.Data.Repositories.Attendance;
 

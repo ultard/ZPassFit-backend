@@ -26,11 +26,10 @@ public sealed class BearerSecuritySchemeTransformer : IOpenApiDocumentTransforme
         document.Security.Add(new OpenApiSecurityRequirement
         {
             [
-                new OpenApiSecuritySchemeReference("Bearer", document, externalResource: null)
+                new OpenApiSecuritySchemeReference("Bearer", document, null)
             ] = new List<string>()
         });
 
         return Task.CompletedTask;
     }
 }
-

@@ -19,14 +19,15 @@ public class LevelService(ILevelRepository levelRepository) : ILevelService
         return level == null ? null : Map(level);
     }
 
-    public async Task<LevelResponse> CreateAsync(CreateLevelRequest request, CancellationToken cancellationToken = default)
+    public async Task<LevelResponse> CreateAsync(CreateLevelRequest request,
+        CancellationToken cancellationToken = default)
     {
         ValidateName(request.Name);
 
         if (request.PreviousLevelId is { } prevId)
         {
-            var prev = await levelRepository.GetByIdAsync(prevId);
-            if (prev == null)
+            var previousLevel = await levelRepository.GetByIdAsync(prevId);
+            if (previousLevel == null)
                 throw new InvalidOperationException("Previous level not found.");
         }
 
@@ -46,16 +47,17 @@ public class LevelService(ILevelRepository levelRepository) : ILevelService
         return Map(reloaded);
     }
 
-    public async Task<LevelResponse?> UpdateAsync(Guid id, UpdateLevelRequest request, CancellationToken cancellationToken = default)
+    public async Task<LevelResponse?> UpdateAsync(Guid id, UpdateLevelRequest request,
+        CancellationToken cancellationToken = default)
     {
         ValidateName(request.Name);
 
         var level = await levelRepository.GetByIdAsync(id);
         if (level == null) return null;
 
-        if (request.PreviousLevelId is { } prevId)
+        if (request.PreviousLevelId is { } previousId)
         {
-            var prev = await levelRepository.GetByIdAsync(prevId);
+            var prev = await levelRepository.GetByIdAsync(previousId);
             if (prev == null)
                 throw new InvalidOperationException("Previous level not found.");
         }
@@ -88,25 +90,26 @@ public class LevelService(ILevelRepository levelRepository) : ILevelService
         await levelRepository.DeleteAsync(id);
     }
 
-    private async Task ValidatePreviousChainAsync(Guid levelId, Guid? newPreviousId, CancellationToken cancellationToken)
+    private async Task ValidatePreviousChainAsync(Guid levelId, Guid? newPreviousId,
+        CancellationToken cancellationToken)
     {
         if (newPreviousId == null) return;
         if (newPreviousId == levelId)
             throw new InvalidOperationException("A level cannot reference itself as previous.");
 
-        Guid? p = newPreviousId;
+        var previousId = newPreviousId;
         var visited = new HashSet<Guid>();
-        while (p != null)
+        while (previousId != null)
         {
-            if (p == levelId)
+            if (previousId == levelId)
                 throw new InvalidOperationException("Previous level chain would create a cycle.");
 
-            if (!visited.Add(p.Value))
+            if (!visited.Add(previousId.Value))
                 break;
 
-            var next = await levelRepository.GetByIdAsync(p.Value);
+            var next = await levelRepository.GetByIdAsync(previousId.Value);
             if (next == null) break;
-            p = next.PreviousLevelId;
+            previousId = next.PreviousLevelId;
         }
     }
 
@@ -116,15 +119,15 @@ public class LevelService(ILevelRepository levelRepository) : ILevelService
             throw new InvalidOperationException("Level name is required.");
     }
 
-    private static LevelResponse Map(Level l)
+    private static LevelResponse Map(Level level)
     {
         return new LevelResponse(
-            l.Id,
-            l.Name,
-            l.ActivateDays,
-            l.GraceDays,
-            l.PreviousLevelId,
-            l.PreviousLevel?.Name
+            level.Id,
+            level.Name,
+            level.ActivateDays,
+            level.GraceDays,
+            level.PreviousLevelId,
+            level.PreviousLevel?.Name
         );
     }
 }

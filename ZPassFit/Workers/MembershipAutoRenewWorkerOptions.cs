@@ -8,9 +8,8 @@ public class MembershipAutoRenewWorkerOptions
     public TimeSpan CheckInterval { get; set; } = TimeSpan.FromHours(1);
 
     /// <summary>
-    /// Максимум продлений за один проход на один абонемент.
-    /// Это защищает от долгих простоев воркера, когда подписка успела устареть на много периодов.
+    ///     Максимум продлений за один проход на один абонемент.
+    ///     Это защищает от долгих простоев воркера, когда подписка успела устареть на много периодов.
     /// </summary>
     public int MaxRenewalsPerMembership { get; set; } = 12;
 }
-

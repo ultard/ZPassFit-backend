@@ -20,8 +20,8 @@ public enum ClientGender
 public class Client
 {
     public Guid Id { get; set; }
-    [MaxLength(36)]
-    public string UserId { get; set; } = null!;
+
+    [MaxLength(36)] public string UserId { get; set; } = null!;
 
     [MaxLength(100)] public required string LastName { get; set; }
     [MaxLength(100)] public required string FirstName { get; set; }

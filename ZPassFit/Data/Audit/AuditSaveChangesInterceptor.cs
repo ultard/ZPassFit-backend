@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -9,7 +10,7 @@ using ZPassFit.Data.Models.Audit;
 namespace ZPassFit.Data.Audit;
 
 /// <summary>
-/// Перед сохранением добавляет строки в <see cref="AuditLog"/> по изменённым сущностям.
+///     Перед сохранением добавляет строки в <see cref="AuditLog" /> по изменённым сущностям.
 /// </summary>
 public sealed class AuditSaveChangesInterceptor(IHttpContextAccessor httpContextAccessor)
     : SaveChangesInterceptor
@@ -17,7 +18,7 @@ public sealed class AuditSaveChangesInterceptor(IHttpContextAccessor httpContext
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = false,
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
     private static readonly HashSet<string> SensitivePropertyNames = new(StringComparer.OrdinalIgnoreCase)
@@ -137,7 +138,7 @@ public sealed class AuditSaveChangesInterceptor(IHttpContextAccessor httpContext
         var parts = new List<string>();
         foreach (var prop in key.Properties)
         {
-            object? value = entry.State == EntityState.Deleted
+            var value = entry.State == EntityState.Deleted
                 ? entry.Property(prop.Name).OriginalValue
                 : entry.Property(prop.Name).CurrentValue;
             parts.Add(value?.ToString() ?? "");
@@ -165,13 +166,11 @@ public sealed class AuditSaveChangesInterceptor(IHttpContextAccessor httpContext
         foreach (var prop in entry.Properties.Where(p =>
                      p.IsModified && !SensitivePropertyNames.Contains(p.Metadata.Name)
                  ))
-        {
             changes[prop.Metadata.Name] = new
             {
                 old = prop.OriginalValue,
                 @new = prop.CurrentValue
             };
-        }
 
         return changes.Count == 0 ? null : SerializeDictionary(changes);
     }

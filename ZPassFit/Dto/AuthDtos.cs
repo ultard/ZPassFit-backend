@@ -1,3 +1,5 @@
+using ZPassFit.Data.Models.Clients;
+
 namespace ZPassFit.Dto;
 
 /// <param name="Email">Email адрес </param>
@@ -15,7 +17,7 @@ public record RegisterRequest(
     string FirstName,
     string MiddleName,
     DateTime BirthDate,
-    Data.Models.Clients.ClientGender Gender,
+    ClientGender Gender,
     string Phone
 );
 

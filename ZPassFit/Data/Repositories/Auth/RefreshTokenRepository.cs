@@ -11,7 +11,8 @@ public class RefreshTokenRepository(ApplicationDbContext context) : IRefreshToke
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<RefreshToken?> FindActiveByHashAsync(string tokenHash, CancellationToken cancellationToken = default)
+    public async Task<RefreshToken?> FindActiveByHashAsync(string tokenHash,
+        CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;
         return await context.RefreshTokens.FirstOrDefaultAsync(
@@ -26,7 +27,8 @@ public class RefreshTokenRepository(ApplicationDbContext context) : IRefreshToke
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<bool> TryRevokeAsync(string tokenHash, string userId, CancellationToken cancellationToken = default)
+    public async Task<bool> TryRevokeAsync(string tokenHash, string userId,
+        CancellationToken cancellationToken = default)
     {
         var stored = await context.RefreshTokens.FirstOrDefaultAsync(
             t => t.TokenHash == tokenHash && t.UserId == userId && t.RevokedAt == null,

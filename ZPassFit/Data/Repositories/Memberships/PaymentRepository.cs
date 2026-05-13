@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using ZPassFit.Data.Models.Memberships;
-using ZPassFit.Data.Repositories;
 
 namespace ZPassFit.Data.Repositories.Memberships;
 

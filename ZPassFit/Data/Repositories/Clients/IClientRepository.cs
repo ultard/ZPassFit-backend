@@ -1,5 +1,4 @@
 using ZPassFit.Data.Models.Clients;
-using ZPassFit.Data.Repositories;
 
 namespace ZPassFit.Data.Repositories.Clients;
 

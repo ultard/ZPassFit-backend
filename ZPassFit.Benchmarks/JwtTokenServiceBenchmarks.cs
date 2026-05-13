@@ -14,10 +14,10 @@ namespace ZPassFit.Benchmarks;
 [MemoryDiagnoser]
 public class JwtTokenServiceBenchmarks
 {
-    private JwtTokenService _service = null!;
-    private ApplicationUser _user = null!;
     private string _refreshToken = null!;
+    private JwtTokenService _service = null!;
     private RefreshToken _storedRefresh = null!;
+    private ApplicationUser _user = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -67,7 +67,8 @@ public class JwtTokenServiceBenchmarks
 
         identity.Setup(s => s.FindByIdAsync(_user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(_user);
 
-        refreshRepo.Setup(r => r.RevokeAsync(_storedRefresh, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        refreshRepo.Setup(r => r.RevokeAsync(_storedRefresh, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
     }
 
     [Benchmark]

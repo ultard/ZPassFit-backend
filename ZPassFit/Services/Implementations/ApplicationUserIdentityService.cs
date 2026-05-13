@@ -17,6 +17,8 @@ public sealed class ApplicationUserIdentityService(UserManager<ApplicationUser> 
         return roles.ToList();
     }
 
-    public Task<ApplicationUser?> FindByIdAsync(string userId, CancellationToken cancellationToken = default) =>
-        userManager.FindByIdAsync(userId);
+    public Task<ApplicationUser?> FindByIdAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        return userManager.FindByIdAsync(userId);
+    }
 }

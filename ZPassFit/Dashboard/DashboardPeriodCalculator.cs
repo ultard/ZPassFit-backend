@@ -18,8 +18,8 @@ public static class DashboardPeriodCalculator
     }
 
     /// <summary>
-    /// Возвращает календарный год и месяц в <paramref name="clubTimeZone"/> для «сейчас»,
-    /// либо проверяет пару query-параметров year/month.
+    ///     Возвращает календарный год и месяц в <paramref name="clubTimeZone" /> для «сейчас»,
+    ///     либо проверяет пару query-параметров year/month.
     /// </summary>
     public static (int Year, int Month) ResolveTargetMonth(
         TimeZoneInfo clubTimeZone,
@@ -50,7 +50,8 @@ public static class DashboardPeriodCalculator
     }
 
     /// <summary>
-    /// Полуночь первого дня месяца по локальному времени клуба до полуночи первого дня следующего месяца — в виде UTC-инстантов.
+    ///     Полуночь первого дня месяца по локальному времени клуба до полуночи первого дня следующего месяца — в виде
+    ///     UTC-инстантов.
     /// </summary>
     public static (DateTime FromUtcInclusive, DateTime ToUtcExclusive) GetMonthUtcRange(
         TimeZoneInfo clubTimeZone,

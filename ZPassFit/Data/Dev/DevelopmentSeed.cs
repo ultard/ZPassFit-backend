@@ -10,8 +10,10 @@ namespace ZPassFit.Data.Dev;
 
 public static class DevelopmentSeed
 {
-    private static DateTime UtcDate(int year, int month, int day) =>
-        new(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+    private static DateTime UtcDate(int year, int month, int day)
+    {
+        return new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+    }
 
     public static async Task EnsureSeededAsync(IServiceProvider services)
     {
@@ -74,35 +76,34 @@ public static class DevelopmentSeed
         }
 
         foreach (var role in roles)
-        {
             if (!await userManager.IsInRoleAsync(user, role))
             {
                 var add = await userManager.AddToRoleAsync(user, role);
                 if (!add.Succeeded)
                     throw new InvalidOperationException($"Failed to add role {role} to {email}");
             }
-        }
 
         return user;
     }
 
-    private static async Task<(List<ApplicationUser> EmployeeUsers, List<ApplicationUser> ClientUsers)> EnsureUsersAsync(
-        UserManager<ApplicationUser> userManager
-    )
+    private static async Task<(List<ApplicationUser> EmployeeUsers, List<ApplicationUser> ClientUsers)>
+        EnsureUsersAsync(
+            UserManager<ApplicationUser> userManager
+        )
     {
         var employeeUsers = new List<ApplicationUser>
         {
             await EnsureUserAsync(
                 userManager,
-                email: "employee@dev.local",
-                password: "DevPassword123!",
-                roles: [Roles.Employee]
+                "employee@dev.local",
+                "DevPassword123!",
+                [Roles.Employee]
             ),
             await EnsureUserAsync(
                 userManager,
-                email: "employee2@dev.local",
-                password: "DevPassword123!",
-                roles: [Roles.Employee]
+                "employee2@dev.local",
+                "DevPassword123!",
+                [Roles.Employee]
             )
         };
 
@@ -110,29 +111,29 @@ public static class DevelopmentSeed
         {
             await EnsureUserAsync(
                 userManager,
-                email: "client@dev.local",
-                password: "DevPassword123!",
-                roles: [Roles.Client]
+                "client@dev.local",
+                "DevPassword123!",
+                [Roles.Client]
             ),
             await EnsureUserAsync(
                 userManager,
-                email: "client2@dev.local",
-                password: "DevPassword123!",
-                roles: [Roles.Client]
+                "client2@dev.local",
+                "DevPassword123!",
+                [Roles.Client]
             ),
             await EnsureUserAsync(
                 userManager,
-                email: "client3@dev.local",
-                password: "DevPassword123!",
-                roles: [Roles.Client]
+                "client3@dev.local",
+                "DevPassword123!",
+                [Roles.Client]
             )
         };
 
         await EnsureUserAsync(
             userManager,
-            email: "admin@dev.local",
-            password: "DevPassword123!",
-            roles: [Roles.Admin]
+            "admin@dev.local",
+            "DevPassword123!",
+            [Roles.Admin]
         );
 
         return (employeeUsers, clientUsers);
@@ -723,4 +724,3 @@ public static class DevelopmentSeed
         await db.SaveChangesAsync();
     }
 }
-

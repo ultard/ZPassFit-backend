@@ -32,7 +32,8 @@ public class JwtTokenServiceTests
         var identityMock = Mock.Get(identity);
 
         var user = new ApplicationUser { Id = "u1", Email = "a@b.c", UserName = "a@b.c" };
-        identityMock.Setup(s => s.GetRolesAsync(user, It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<string>());
+        identityMock.Setup(s => s.GetRolesAsync(user, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<string>());
         repoMock.Setup(r => r.AddAndSaveAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -44,12 +45,11 @@ public class JwtTokenServiceTests
         repoMock.Verify(
             r =>
                 r.AddAndSaveAsync(
-                    It.Is<RefreshToken>(
-                        t =>
-                            t.UserId == user.Id
-                            && t.TokenHash == HashToken(pair.RefreshToken)
-                            && t.RevokedAt == null
-                            && t.ExpiresAt > DateTime.UtcNow
+                    It.Is<RefreshToken>(t =>
+                        t.UserId == user.Id
+                        && t.TokenHash == HashToken(pair.RefreshToken)
+                        && t.RevokedAt == null
+                        && t.ExpiresAt > DateTime.UtcNow
                     ),
                     It.IsAny<CancellationToken>()
                 ),
@@ -72,7 +72,8 @@ public class JwtTokenServiceTests
         var identityMock = Mock.Get(identity);
 
         var user = new ApplicationUser { Id = "u-role", Email = "r@b.c", UserName = "r@b.c" };
-        identityMock.Setup(s => s.GetRolesAsync(user, It.IsAny<CancellationToken>())).ReturnsAsync(new[] { "Admin", "Coach" });
+        identityMock.Setup(s => s.GetRolesAsync(user, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { "Admin", "Coach" });
         repoMock.Setup(r => r.AddAndSaveAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -105,7 +106,8 @@ public class JwtTokenServiceTests
         var identityMock = Mock.Get(identity);
 
         var user = new ApplicationUser { Id = "u1", Email = "a@b.c", UserName = "a@b.c" };
-        identityMock.Setup(s => s.GetRolesAsync(user, It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<string>());
+        identityMock.Setup(s => s.GetRolesAsync(user, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<string>());
         repoMock.Setup(r => r.AddAndSaveAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -135,7 +137,8 @@ public class JwtTokenServiceTests
         var identityMock = Mock.Get(identity);
 
         var user = new ApplicationUser { Id = "u1", Email = "a@b.c", UserName = "a@b.c" };
-        identityMock.Setup(s => s.GetRolesAsync(user, It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<string>());
+        identityMock.Setup(s => s.GetRolesAsync(user, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<string>());
         repoMock.Setup(r => r.AddAndSaveAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -174,7 +177,8 @@ public class JwtTokenServiceTests
         var identityMock = Mock.Get(identity);
 
         var user = new ApplicationUser { Id = "u1", Email = "a@b.c", UserName = "a@b.c" };
-        identityMock.Setup(s => s.GetRolesAsync(user, It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<string>());
+        identityMock.Setup(s => s.GetRolesAsync(user, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<string>());
         repoMock.Setup(r => r.AddAndSaveAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -193,7 +197,8 @@ public class JwtTokenServiceTests
                 }
             );
 
-        identityMock.Setup(s => s.FindByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync((ApplicationUser?)null);
+        identityMock.Setup(s => s.FindByIdAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ApplicationUser?)null);
 
         var refreshed = await jwtTokenService.RefreshAsync(pair.RefreshToken, ct);
         Assert.Null(refreshed);
@@ -215,7 +220,8 @@ public class JwtTokenServiceTests
         var identityMock = Mock.Get(identity);
 
         var user = new ApplicationUser { Id = "u1", Email = "a@b.c", UserName = "a@b.c" };
-        identityMock.Setup(s => s.GetRolesAsync(user, It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<string>());
+        identityMock.Setup(s => s.GetRolesAsync(user, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<string>());
         repoMock.Setup(r => r.AddAndSaveAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -239,11 +245,12 @@ public class JwtTokenServiceTests
         var refreshed = await jwtTokenService.RefreshAsync(pair.RefreshToken, ct);
 
         Assert.NotNull(refreshed);
-        Assert.NotEqual(pair.AccessToken, refreshed!.AccessToken);
+        Assert.NotEqual(pair.AccessToken, refreshed.AccessToken);
         Assert.NotEqual(pair.RefreshToken, refreshed.RefreshToken);
 
         repoMock.Verify(r => r.RevokeAsync(stored, It.IsAny<CancellationToken>()), Times.Once);
-        repoMock.Verify(r => r.AddAndSaveAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        repoMock.Verify(r => r.AddAndSaveAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
         repoMock.VerifyAll();
         identityMock.VerifyAll();
     }

@@ -21,8 +21,8 @@ public class DashboardPeriodCalculatorTests
     public void GetPreviousMonthUtcRange_AfterJanuary_IsDecember()
     {
         var (from, to) = DashboardPeriodCalculator.GetPreviousMonthUtcRange(Moscow, 2026, 1);
-
         var (expectedFrom, expectedTo) = DashboardPeriodCalculator.GetMonthUtcRange(Moscow, 2025, 12);
+
         Assert.Equal(expectedFrom, from);
         Assert.Equal(expectedTo, to);
     }

@@ -3,7 +3,7 @@ using ZPassFit.Data.Models;
 namespace ZPassFit.Services.Interfaces;
 
 /// <summary>
-/// Роли и загрузка пользователя для JWT (обёртка над Identity UserManager).
+///     Роли и загрузка пользователя для JWT (обёртка над Identity UserManager).
 /// </summary>
 public interface IApplicationUserIdentityService
 {

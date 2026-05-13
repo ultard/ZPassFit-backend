@@ -24,7 +24,8 @@ public class AuthController(
     [HttpPost("register")]
     [EndpointSummary("Регистрация")]
     [EndpointDescription("Создаёт нового пользователя (клиента). Требуется подтверждение администратором.")]
-    [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status201Created, Description = "Регистрация прошла успешно")]
+    [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status201Created,
+        Description = "Регистрация прошла успешно")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Description = "Не удалось зарегистрироватся")]
     public async Task<IResult> Register([FromBody] RegisterRequest request)
     {

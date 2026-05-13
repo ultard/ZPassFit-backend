@@ -17,15 +17,16 @@ public class JwtTokenService(
     IOptions<JwtOptions> options
 ) : IJwtTokenService
 {
+    private const string TokenTypeClaim = "token_type";
+    private const string RefreshTokenType = "refresh";
     private readonly JwtOptions _jwt = options.Value;
-    private readonly JwtSecurityTokenHandler _tokenHandler = new();
+
     private readonly SigningCredentials _signingCredentials = new(
         new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Value.Secret)),
         SecurityAlgorithms.HmacSha256
     );
 
-    private const string TokenTypeClaim = "token_type";
-    private const string RefreshTokenType = "refresh";
+    private readonly JwtSecurityTokenHandler _tokenHandler = new();
 
     public async Task<AuthTokenPair> CreateTokensAsync(
         ApplicationUser user,
@@ -57,7 +58,7 @@ public class JwtTokenService(
             return null;
 
         var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
+                     ?? principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
         if (string.IsNullOrWhiteSpace(userId))
             return null;
 
@@ -89,8 +90,10 @@ public class JwtTokenService(
         await refreshTokens.TryRevokeAsync(hash, userId, cancellationToken);
     }
 
-    public Task RevokeAllRefreshTokensAsync(string userId, CancellationToken cancellationToken = default) =>
-        refreshTokens.RevokeAllForUserAsync(userId, cancellationToken);
+    public Task RevokeAllRefreshTokensAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        return refreshTokens.RevokeAllForUserAsync(userId, cancellationToken);
+    }
 
     private async Task<(string Token, DateTime ExpiresAtUtc)> CreateAccessTokenAsync(
         ApplicationUser user,
@@ -112,9 +115,9 @@ public class JwtTokenService(
         var expires = DateTime.UtcNow.AddMinutes(_jwt.AccessTokenExpirationMinutes);
 
         var token = new JwtSecurityToken(
-            issuer: _jwt.Issuer,
-            audience: _jwt.Audience,
-            claims: claims,
+            _jwt.Issuer,
+            _jwt.Audience,
+            claims,
             expires: expires,
             signingCredentials: _signingCredentials
         );
@@ -136,9 +139,9 @@ public class JwtTokenService(
         var expires = DateTime.UtcNow.AddDays(_jwt.RefreshTokenExpirationDays);
 
         var token = new JwtSecurityToken(
-            issuer: _jwt.Issuer,
-            audience: _jwt.Audience,
-            claims: claims,
+            _jwt.Issuer,
+            _jwt.Audience,
+            claims,
             expires: expires,
             signingCredentials: _signingCredentials
         );

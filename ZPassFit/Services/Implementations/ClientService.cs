@@ -103,39 +103,6 @@ public class ClientService(
         return new PagedClientsResponse(page, pageSize, total, mapped);
     }
 
-    private static ClientListItemResponse MapListItem(Client c)
-    {
-        return new ClientListItemResponse(
-            c.Id,
-            c.LastName,
-            c.FirstName,
-            c.MiddleName,
-            c.Phone,
-            c.Email,
-            c.Status,
-            c.RegistrationDate
-        );
-    }
-
-    private static ClientResponse Map(Client c)
-    {
-        return new ClientResponse(
-            c.Id,
-            c.LastName,
-            c.FirstName,
-            c.MiddleName,
-            c.BirthDate,
-            c.Gender,
-            c.Phone,
-            c.Email,
-            c.RegistrationDate,
-            c.Status,
-            c.Bonuses,
-            c.Balance,
-            c.Notes
-        );
-    }
-
     public async Task<ClientResponse?> CreditBalanceAsync(Guid clientId, int amount)
     {
         if (amount <= 0)
@@ -172,23 +139,57 @@ public class ClientService(
         return Map(client);
     }
 
+    private static ClientListItemResponse MapListItem(Client client)
+    {
+        return new ClientListItemResponse(
+            client.Id,
+            client.LastName,
+            client.FirstName,
+            client.MiddleName,
+            client.Phone,
+            client.Email,
+            client.Status,
+            client.RegistrationDate
+        );
+    }
+
+    private static ClientResponse Map(Client client)
+    {
+        return new ClientResponse(
+            client.Id,
+            client.LastName,
+            client.FirstName,
+            client.MiddleName,
+            client.BirthDate,
+            client.Gender,
+            client.Phone,
+            client.Email,
+            client.RegistrationDate,
+            client.Status,
+            client.Bonuses,
+            client.Balance,
+            client.Notes
+        );
+    }
+
     private static MyClientLevelResponse MapClientLevel(
-        ClientLevel cl,
+        ClientLevel clientLevel,
         LevelResponse? nextLevel,
         int? remainingDaysToNextLevel)
     {
-        return new MyClientLevelResponse(cl.Id, cl.ReceiveDate, MapLevel(cl.Level), nextLevel, remainingDaysToNextLevel);
+        return new MyClientLevelResponse(clientLevel.Id, clientLevel.ReceiveDate, MapLevel(clientLevel.Level),
+            nextLevel, remainingDaysToNextLevel);
     }
 
-    private static LevelResponse MapLevel(Level l)
+    private static LevelResponse MapLevel(Level level)
     {
         return new LevelResponse(
-            l.Id,
-            l.Name,
-            l.ActivateDays,
-            l.GraceDays,
-            l.PreviousLevelId,
-            l.PreviousLevel?.Name
+            level.Id,
+            level.Name,
+            level.ActivateDays,
+            level.GraceDays,
+            level.PreviousLevelId,
+            level.PreviousLevel?.Name
         );
     }
 }

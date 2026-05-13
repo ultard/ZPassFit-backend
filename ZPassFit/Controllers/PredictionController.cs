@@ -17,11 +17,13 @@ public class PredictionController(
     [HttpPost("churn")]
     [Authorize(Roles = Roles.AdminOrEmployee)]
     [EndpointSummary("Рассчитать вероятность оттока")]
-    [EndpointDescription("Собирает данные клиента из БД, вызывает gRPC PredictionService и возвращает вероятность оттока.")]
+    [EndpointDescription(
+        "Собирает данные клиента из БД, вызывает gRPC PredictionService и возвращает вероятность оттока.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ChurnPredictionResponse))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
-    public async Task<IResult> PredictChurn([FromBody] ChurnPredictionRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> PredictChurn([FromBody] ChurnPredictionRequest request,
+        CancellationToken cancellationToken)
     {
         try
         {

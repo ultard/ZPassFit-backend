@@ -4,7 +4,8 @@ using ZPassFit.Data.Repositories.Attendance;
 namespace ZPassFit.Workers;
 
 /// <summary>
-/// Периодически закрывает открытые посещения, если с момента входа прошло больше <see cref="StaleOpenVisitsWorkerOptions.MaxOpenDuration"/>.
+///     Периодически закрывает открытые посещения, если с момента входа прошло больше
+///     <see cref="StaleOpenVisitsWorkerOptions.MaxOpenDuration" />.
 /// </summary>
 public class StaleOpenVisitsWorker(
     IServiceScopeFactory scopeFactory,

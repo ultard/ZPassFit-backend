@@ -61,7 +61,7 @@ public record UpdateMembershipPlanRequest(
 );
 
 /// <summary>
-/// Выдать или продлить абонемент клиенту с дашборда (без привязки к платежу клиента).
+///     Выдать или продлить абонемент клиенту с дашборда (без привязки к платежу клиента).
 /// </summary>
 public record AdminSetMembershipRequest(
     Guid ClientId,
@@ -70,7 +70,7 @@ public record AdminSetMembershipRequest(
 );
 
 /// <summary>
-/// Частичное обновление абонемента (статус, тариф, даты).
+///     Частичное обновление абонемента (статус, тариф, даты).
 /// </summary>
 public record UpdateMembershipRequest(
     MembershipStatus? Status,

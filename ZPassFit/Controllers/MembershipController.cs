@@ -92,7 +92,8 @@ public class MembershipController(
     [HttpPost("cancel")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Отменить абонемент")]
-    [EndpointDescription("Отключает автопродление: за текущий период списания продолжаются, а следующие периоды не списываются.")]
+    [EndpointDescription(
+        "Отключает автопродление: за текущий период списания продолжаются, а следующие периоды не списываются.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MembershipResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

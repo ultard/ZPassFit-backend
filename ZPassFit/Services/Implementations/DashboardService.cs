@@ -1,5 +1,4 @@
 using System.Globalization;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ZPassFit.Dashboard;
 using ZPassFit.Data.Repositories;
@@ -14,7 +13,6 @@ namespace ZPassFit.Services.Implementations;
 public class DashboardService(IOptions<DashboardOptions> dashboardOptions, IServiceScopeFactory scopeFactory)
     : IDashboardService
 {
-    /// <summary>Относительное изменение ниже этого порога считаем «без изменений» для стрелки направления.</summary>
     private const decimal DirectionFlatPercentThreshold = 0.05m;
 
     public async Task<DashboardOverviewResponse> GetOverviewAsync(
@@ -136,24 +134,6 @@ public class DashboardService(IOptions<DashboardOptions> dashboardOptions, IServ
 
         return new DashboardOverviewResponse(periodMeta, kpis, series);
     }
-
-    private sealed record DashboardKpiData(
-        int VisitsSelectedMonth,
-        int VisitsPreviousMonth,
-        (int Count, long TotalAmount) PaymentsSelectedMonth,
-        (int Count, long TotalAmount) PaymentsPreviousMonth,
-        int NewClientsSelectedMonth,
-        int NewClientsPreviousMonth,
-        int MembershipActivationsSelectedMonth,
-        int MembershipActivationsPreviousMonth
-    );
-
-    private sealed record DashboardChartSourceData(
-        IReadOnlyList<ClubDayCountRow> VisitCountsByLocalDay,
-        IReadOnlyList<ClubDayRevenueRow> PaymentAmountsByLocalDay,
-        IReadOnlyList<ClubDayCountRow> NewClientCountsByLocalDay,
-        IReadOnlyList<MembershipPlanActivationCount> MembershipActivationsByPlan
-    );
 
     private async Task<DashboardKpiData> LoadKpiDataAsync(
         DateTime selectedMonthStartUtc,
@@ -432,4 +412,22 @@ public class DashboardService(IOptions<DashboardOptions> dashboardOptions, IServ
             .Select(day => new DashboardRevenueDayPoint(day, amountByClubLocalDay.GetValueOrDefault(day)))
             .ToList();
     }
+
+    private sealed record DashboardKpiData(
+        int VisitsSelectedMonth,
+        int VisitsPreviousMonth,
+        (int Count, long TotalAmount) PaymentsSelectedMonth,
+        (int Count, long TotalAmount) PaymentsPreviousMonth,
+        int NewClientsSelectedMonth,
+        int NewClientsPreviousMonth,
+        int MembershipActivationsSelectedMonth,
+        int MembershipActivationsPreviousMonth
+    );
+
+    private sealed record DashboardChartSourceData(
+        IReadOnlyList<ClubDayCountRow> VisitCountsByLocalDay,
+        IReadOnlyList<ClubDayRevenueRow> PaymentAmountsByLocalDay,
+        IReadOnlyList<ClubDayCountRow> NewClientCountsByLocalDay,
+        IReadOnlyList<MembershipPlanActivationCount> MembershipActivationsByPlan
+    );
 }

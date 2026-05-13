@@ -17,7 +17,7 @@ public class PredictionServiceTests
     public async Task Predict_ClientMissing_ReturnsNull()
     {
         var id = Guid.NewGuid();
-        var grpc = new Mock<ProtoPrediction.PredictionServiceClient>(MockBehavior.Strict);
+        var grpc = new Mock<PredictionService.PredictionServiceClient>(MockBehavior.Strict);
         var clientRepo = new Mock<IClientRepository>(MockBehavior.Strict);
         var membershipRepo = new Mock<IMembershipRepository>(MockBehavior.Strict);
         var visitRepo = new Mock<IVisitLogRepository>(MockBehavior.Strict);
@@ -49,7 +49,7 @@ public class PredictionServiceTests
             Email = "e@e.com"
         };
 
-        var grpc = new Mock<ProtoPrediction.PredictionServiceClient>(MockBehavior.Strict);
+        var grpc = new Mock<PredictionService.PredictionServiceClient>(MockBehavior.Strict);
         var clientRepo = new Mock<IClientRepository>(MockBehavior.Strict);
         var membershipRepo = new Mock<IMembershipRepository>(MockBehavior.Strict);
         var visitRepo = new Mock<IVisitLogRepository>(MockBehavior.Strict);
@@ -104,9 +104,10 @@ public class PredictionServiceTests
             Client = client
         };
 
-        var grpc = new Mock<ProtoPrediction.PredictionServiceClient>(MockBehavior.Strict);
+        var grpc = new Mock<PredictionService.PredictionServiceClient>(MockBehavior.Strict);
         grpc
-            .Setup(c => c.PredictChurnAsync(It.IsAny<PredictChurnRequest>(), It.IsAny<Metadata>(), It.IsAny<DateTime?>(),
+            .Setup(c => c.PredictChurnAsync(It.IsAny<PredictChurnRequest>(), It.IsAny<Metadata>(),
+                It.IsAny<DateTime?>(),
                 It.IsAny<CancellationToken>()))
             .Throws(new RpcException(new Status(StatusCode.Unavailable, "down")));
 

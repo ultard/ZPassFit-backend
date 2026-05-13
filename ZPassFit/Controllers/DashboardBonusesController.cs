@@ -35,14 +35,12 @@ public class DashboardBonusesController(IBonusTransactionRepository bonusTransac
     )
     {
         if (page < MinPage || pageSize < MinPageSize || pageSize > MaxPageSize)
-        {
             return Results.BadRequest(
                 new
                 {
                     error = $"page must be >= {MinPage}, pageSize must be between {MinPageSize} and {MaxPageSize}."
                 }
             );
-        }
 
         var (items, total) = await bonusTransactionRepository.GetPagedAsync(
             fromUtc,

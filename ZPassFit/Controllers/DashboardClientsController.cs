@@ -32,14 +32,12 @@ public class DashboardClientsController(IClientService clientService) : Controll
     )
     {
         if (page < MinPage || pageSize < MinPageSize || pageSize > MaxPageSize)
-        {
             return Results.BadRequest(
                 new
                 {
                     error = $"page must be >= {MinPage}, pageSize must be between {MinPageSize} and {MaxPageSize}."
                 }
             );
-        }
 
         var data = await clientService.SearchPagedAsync(search, page, pageSize, cancellationToken);
         return Results.Ok(data);

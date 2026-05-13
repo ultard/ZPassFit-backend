@@ -1,5 +1,4 @@
 using ZPassFit.Data.Models.Attendance;
-using ZPassFit.Data.Repositories;
 
 namespace ZPassFit.Data.Repositories.Attendance;
 
@@ -9,10 +8,12 @@ public interface IVisitLogRepository
     Task UpdateAsync(VisitLog visitLog);
     Task<VisitLog?> GetOpenVisitByClientIdAsync(Guid clientId);
     Task<IEnumerable<VisitLog>> GetVisitHistoryByClientIdAsync(Guid clientId);
+
     Task<int> CountDistinctVisitDaysByClientAsync(
         Guid clientId,
         DateTime fromUtcInclusive,
         CancellationToken cancellationToken = default);
+
     Task<VisitLog?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<int> CountVisitsEnteringBetweenAsync(DateTime fromUtcInclusive, DateTime toUtcExclusive);
@@ -37,8 +38,10 @@ public interface IVisitLogRepository
     );
 
     /// <summary>
-    /// Закрывает открытые посещения, у которых <see cref="VisitLog.EnterDate"/> раньше чем (UTC сейчас − <paramref name="maxOpenDuration"/>).
-    /// <see cref="VisitLog.LeaveDate"/> выставляется как <see cref="VisitLog.EnterDate"/> + <paramref name="maxOpenDuration"/>.
+    ///     Закрывает открытые посещения, у которых <see cref="VisitLog.EnterDate" /> раньше чем (UTC сейчас −
+    ///     <paramref name="maxOpenDuration" />).
+    ///     <see cref="VisitLog.LeaveDate" /> выставляется как <see cref="VisitLog.EnterDate" /> +
+    ///     <paramref name="maxOpenDuration" />.
     /// </summary>
     Task<int> AutoCloseStaleOpenVisitsAsync(TimeSpan maxOpenDuration, CancellationToken cancellationToken = default);
 }

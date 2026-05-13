@@ -75,7 +75,8 @@ public class MembershipRepository(ApplicationDbContext context) : IMembershipRep
             from m in context.Memberships.AsNoTracking()
             join p in context.MembershipPlans.AsNoTracking() on m.PlanId equals p.Id
             where m.ActivatedDate >= fromUtcInclusive && m.ActivatedDate < toUtcExclusive
-            group m by new { m.PlanId, p.Name } into g
+            group m by new { m.PlanId, p.Name }
+            into g
             orderby g.Count() descending
             select new MembershipPlanActivationCount(g.Key.PlanId, g.Key.Name, g.Count())
         ).ToListAsync(cancellationToken);

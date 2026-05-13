@@ -343,7 +343,8 @@ public class LevelServiceTests
         var repoMock = Mock.Get(levelRepository);
         repoMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(level);
         repoMock.Setup(r => r.CountClientLevelsUsingLevelAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(0);
-        repoMock.Setup(r => r.CountLevelsWithPreviousPointingToAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        repoMock.Setup(r => r.CountLevelsWithPreviousPointingToAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
 
         var ct = TestContext.Current.CancellationToken;
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => levelService.DeleteAsync(id, ct));
@@ -364,7 +365,8 @@ public class LevelServiceTests
         var repoMock = Mock.Get(levelRepository);
         repoMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(level);
         repoMock.Setup(r => r.CountClientLevelsUsingLevelAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(0);
-        repoMock.Setup(r => r.CountLevelsWithPreviousPointingToAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(0);
+        repoMock.Setup(r => r.CountLevelsWithPreviousPointingToAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
         repoMock.Setup(r => r.DeleteAsync(id)).Returns(Task.CompletedTask);
 
         await levelService.DeleteAsync(id, TestContext.Current.CancellationToken);

@@ -10,19 +10,15 @@ public class AuditLog
 
     public string? UserId { get; set; }
 
-    [MaxLength(64)]
-    public string Action { get; set; } = string.Empty;
+    [MaxLength(64)] public string Action { get; set; } = string.Empty;
 
-    [MaxLength(256)]
-    public string EntityType { get; set; } = string.Empty;
+    [MaxLength(256)] public string EntityType { get; set; } = string.Empty;
 
-    [MaxLength(128)]
-    public string? EntityId { get; set; }
+    [MaxLength(128)] public string? EntityId { get; set; }
 
     public string? Details { get; set; }
 
-    [MaxLength(45)]
-    public string? IpAddress { get; set; }
+    [MaxLength(45)] public string? IpAddress { get; set; }
 
     public ApplicationUser? User { get; set; }
 }

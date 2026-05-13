@@ -50,12 +50,12 @@ public class MembershipService(
         if (plan.Durations.Length > 0 && !plan.Durations.Contains(request.DurationDays))
             throw new InvalidOperationException("Selected duration is not allowed for this plan.");
 
-        var pm = paymentMethodsOptions.Value;
+        var options = paymentMethodsOptions.Value;
         var methodAllowed = request.Method switch
         {
-            PaymentMethod.Cash => pm.CashEnabled,
-            PaymentMethod.Card => pm.CardEnabled,
-            PaymentMethod.Balance => pm.BalanceEnabled,
+            PaymentMethod.Cash => options.CashEnabled,
+            PaymentMethod.Card => options.CardEnabled,
+            PaymentMethod.Balance => options.BalanceEnabled,
             _ => false
         };
         if (!methodAllowed)
@@ -262,30 +262,33 @@ public class MembershipService(
 
     private static void ValidateDurations(int[] durations)
     {
-        foreach (var d in durations)
-        {
-            if (d <= 0)
-                throw new InvalidOperationException("Each duration must be a positive number of days.");
-        }
+        if (durations.Any(d => d <= 0))
+            throw new InvalidOperationException("Each duration must be a positive number of days.");
     }
 
-    private static MembershipResponse MapMembership(Membership m)
+    private static MembershipResponse MapMembership(Membership membership)
     {
-        return new MembershipResponse(m.Id, m.PlanId, m.Status, m.ActivatedDate, m.ExpireDate);
+        return new MembershipResponse(
+            membership.Id,
+            membership.PlanId,
+            membership.Status,
+            membership.ActivatedDate,
+            membership.ExpireDate
+        );
     }
 
-    private static MembershipListItemResponse MapListItem(Membership m)
+    private static MembershipListItemResponse MapListItem(Membership membership)
     {
         return new MembershipListItemResponse(
-            m.Id,
-            m.PlanId,
-            m.Plan.Name,
-            m.ClientId,
-            m.Client.LastName,
-            m.Client.FirstName,
-            m.Status,
-            m.ActivatedDate,
-            m.ExpireDate
+            membership.Id,
+            membership.PlanId,
+            membership.Plan.Name,
+            membership.ClientId,
+            membership.Client.LastName,
+            membership.Client.FirstName,
+            membership.Status,
+            membership.ActivatedDate,
+            membership.ExpireDate
         );
     }
 }

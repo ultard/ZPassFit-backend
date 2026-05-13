@@ -13,19 +13,19 @@ x-env: &env
 services:
   zpassfit-ai:
     image: zpassfit-ai
-    <<: [*common, *env]
+    <<: [ *common, *env ]
     networks:
       - zpassfit-network
 
   zpassfit-backend:
     image: zpassfit-backend
-    <<: [*common, *env]
+    <<: [ *common, *env ]
     ports:
       - "8080:8080"
 
   zpassfit-postgres:
     image: postgres:alpine
-    <<: [*common, *env]
+    <<: [ *common, *env ]
     volumes:
       - zpassfit-postgres:/var/lib/postgresql
 
