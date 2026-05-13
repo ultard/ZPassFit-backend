@@ -55,10 +55,12 @@ public class YooKassaService(
         if (plan.Durations.Length > 0 && !plan.Durations.Contains(request.DurationDays))
             throw new InvalidOperationException("Selected duration is not allowed for this plan.");
 
+        var amount = MembershipPricing.ComputePrice(plan, request.DurationDays);
+
         var dbPayment = new MembershipPayment
         {
             Id = Guid.NewGuid(),
-            Amount = plan.Price,
+            Amount = amount,
             Method = DomainPaymentMethod.YooKassa,
             Status = DomainPaymentStatus.Pending,
             ClientId = client.Id,
@@ -81,7 +83,7 @@ public class YooKassaService(
             Amount = new MonetaryAmount
             {
                 Currency = CurrencyCode.RUB,
-                Value = FormatRubAmount(plan.Price)
+                Value = FormatRubAmount(amount)
             },
             Capture = true,
             Description = Truncate($"Абонемент «{plan.Name}», {request.DurationDays} дн.", 128),

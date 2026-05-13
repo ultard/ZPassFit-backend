@@ -88,18 +88,20 @@ public class MembershipService(
             await membershipRepository.UpdateAsync(membership);
         }
 
+        var amount = MembershipPricing.ComputePrice(plan, request.DurationDays);
+
         if (request.Method == PaymentMethod.Balance)
         {
-            if (client.Balance < plan.Price)
+            if (client.Balance < amount)
                 throw new InvalidOperationException("Not enough balance.");
 
-            client.Balance -= plan.Price;
+            client.Balance -= amount;
             await clientRepository.UpdateAsync(client);
         }
 
         var payment = new Payment
         {
-            Amount = plan.Price,
+            Amount = amount,
             Method = request.Method,
             Status = PaymentStatus.Completed,
             PaymentDate = now,

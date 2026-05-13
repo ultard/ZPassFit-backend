@@ -64,21 +64,23 @@ public class MembershipAutoRenewWorker(
                     (int)(membership.ExpireDate.Date - membership.ActivatedDate.Date).TotalDays
                 );
 
+                var renewalPrice = MembershipPricing.ComputePrice(membership.Plan, periodDays);
+
                 var renewals = 0;
                 while (membership.ExpireDate <= now && renewals < maxRenewals)
                 {
-                    if (membership.Client.Balance < membership.Plan.Price)
+                    if (membership.Client.Balance < renewalPrice)
                     {
                         membership.Status = MembershipStatus.Frozen;
                         membership.AutoRenewEnabled = false;
                         break;
                     }
 
-                    membership.Client.Balance -= membership.Plan.Price;
+                    membership.Client.Balance -= renewalPrice;
 
                     db.Payments.Add(new Payment
                     {
-                        Amount = membership.Plan.Price,
+                        Amount = renewalPrice,
                         Method = PaymentMethod.Balance,
                         Status = PaymentStatus.Completed,
                         PaymentDate = now,

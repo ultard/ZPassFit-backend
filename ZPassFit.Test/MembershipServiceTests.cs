@@ -298,6 +298,105 @@ public class MembershipServiceTests
 
     [Theory]
     [AutoMoqData]
+    public async Task BuyMembership_LongerDuration_ScalesPriceProportionally(
+        [Frozen] IClientRepository clientRepo,
+        [Frozen] IMembershipPlanRepository planRepo,
+        [Frozen] IMembershipRepository membershipRepo,
+        [Frozen] IPaymentRepository paymentRepo,
+        MembershipService membershipService
+    )
+    {
+        var userId = "u1";
+        var client = new Client
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            LastName = "Ivanov",
+            FirstName = "Ivan",
+            MiddleName = "Ivanovich",
+            BirthDate = new DateTime(2000, 1, 2),
+            Gender = ClientGender.Male,
+            Phone = "+70000000000",
+            Email = "ivan@example.com"
+        };
+
+        var plan = new MembershipPlan
+        {
+            Id = Guid.NewGuid(),
+            Name = "Base",
+            Description = "Standard access",
+            Durations = [30, 90, 180],
+            Price = 1500
+        };
+
+        Mock.Get(clientRepo).Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
+        Mock.Get(planRepo).Setup(r => r.GetByIdAsync(plan.Id)).ReturnsAsync(plan);
+        Mock.Get(membershipRepo).Setup(r => r.GetByClientIdAsync(client.Id)).ReturnsAsync((Membership?)null);
+
+        Payment? addedPayment = null;
+        Mock.Get(paymentRepo).Setup(r => r.AddAsync(It.IsAny<Payment>()))
+            .Callback<Payment>(p => addedPayment = p)
+            .Returns(Task.CompletedTask);
+
+        Mock.Get(membershipRepo).Setup(r => r.AddAsync(It.IsAny<Membership>()))
+            .Returns(Task.CompletedTask);
+
+        await membershipService.BuyMembershipAsync(
+            userId, new BuyMembershipRequest(plan.Id, 90, PaymentMethod.Cash));
+
+        Assert.NotNull(addedPayment);
+        Assert.Equal(4500, addedPayment!.Amount);
+    }
+
+    [Theory]
+    [AutoMoqData]
+    public async Task BuyMembership_Balance_ChecksScaledPrice(
+        [Frozen] IClientRepository clientRepo,
+        [Frozen] IMembershipPlanRepository planRepo,
+        [Frozen] IMembershipRepository membershipRepo,
+        MembershipService membershipService
+    )
+    {
+        var userId = "u1";
+        var client = new Client
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            LastName = "Ivanov",
+            FirstName = "Ivan",
+            MiddleName = "Ivanovich",
+            BirthDate = new DateTime(2000, 1, 2),
+            Gender = ClientGender.Male,
+            Phone = "+70000000000",
+            Email = "ivan@example.com",
+            Balance = 2000
+        };
+
+        var plan = new MembershipPlan
+        {
+            Id = Guid.NewGuid(),
+            Name = "Base",
+            Description = "Standard access",
+            Durations = [30, 90],
+            Price = 1500
+        };
+
+        Mock.Get(clientRepo).Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
+        Mock.Get(planRepo).Setup(r => r.GetByIdAsync(plan.Id)).ReturnsAsync(plan);
+        Mock.Get(membershipRepo).Setup(r => r.GetByClientIdAsync(client.Id)).ReturnsAsync((Membership?)null);
+        Mock.Get(membershipRepo).Setup(r => r.AddAsync(It.IsAny<Membership>()))
+            .Returns(Task.CompletedTask);
+
+        // Баланса 2000 хватает на 30 дней (1500), но не хватает на 90 дней (4500).
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            membershipService.BuyMembershipAsync(
+                userId, new BuyMembershipRequest(plan.Id, 90, PaymentMethod.Balance)));
+
+        Assert.Equal("Not enough balance.", ex.Message);
+    }
+
+    [Theory]
+    [AutoMoqData]
     public async Task BuyMembership_Existing_UpdatesMembershipAndAddsPayment(
         [Frozen] IClientRepository clientRepo,
         [Frozen] IMembershipPlanRepository planRepo,
