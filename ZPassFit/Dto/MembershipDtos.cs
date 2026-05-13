@@ -46,6 +46,22 @@ public record PaymentMethodsSettingsResponse(
     IReadOnlyList<PaymentMethodSettingResponse> Methods
 );
 
+public record StartYooKassaCheckoutRequest(
+    Guid PlanId,
+    int DurationDays
+);
+
+public record StartYooKassaCheckoutResponse(
+    Guid PaymentId,
+    string ConfirmationUrl,
+    string YooKassaPaymentId
+);
+
+public record SyncYooKassaPaymentResponse(
+    string Code,
+    string? YooKassaStatus = null,
+    string? Message = null);
+
 public record CreateMembershipPlanRequest(
     [MaxLength(32)] string Name,
     [MaxLength(128)] string Description,

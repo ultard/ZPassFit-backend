@@ -7,4 +7,5 @@ public static class Roles
     public const string Client = "Client";
 
     public const string AdminOrEmployee = Admin + "," + Employee;
+    public const string AuthorizedUser = AdminOrEmployee + "," + Client;
 }

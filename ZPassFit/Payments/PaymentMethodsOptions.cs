@@ -9,4 +9,5 @@ public class PaymentMethodsOptions
     public bool CardEnabled { get; set; } = true;
 
     public bool BalanceEnabled { get; set; } = true;
+    public bool YooKassaEnabled { get; set; }
 }

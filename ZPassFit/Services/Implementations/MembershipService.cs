@@ -56,6 +56,7 @@ public class MembershipService(
             PaymentMethod.Cash => options.CashEnabled,
             PaymentMethod.Card => options.CardEnabled,
             PaymentMethod.Balance => options.BalanceEnabled,
+            PaymentMethod.YooKassa => options.YooKassaEnabled,
             _ => false
         };
         if (!methodAllowed)

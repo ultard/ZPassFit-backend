@@ -1,4 +1,6 @@
+using System.Net.Http;
 using System.Text;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +21,7 @@ using ZPassFit.Data.Repositories.Memberships;
 using ZPassFit.Middleware;
 using ZPassFit.OpenApi;
 using ZPassFit.Payments;
+using ZPassFit.YooKassa;
 using ZPassFit.Services.Implementations;
 using ZPassFit.Services.Interfaces;
 using ZPassFit.Workers;
@@ -61,6 +64,8 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptio
 builder.Services.Configure<DashboardOptions>(builder.Configuration.GetSection(DashboardOptions.SectionName));
 builder.Services.Configure<PaymentMethodsOptions>(
     builder.Configuration.GetSection(PaymentMethodsOptions.SectionName));
+builder.Services.Configure<YooKassaOptions>(
+    builder.Configuration.GetSection(YooKassaOptions.SectionName));
 
 builder.Services.Configure<StaleOpenVisitsWorkerOptions>(
     builder.Configuration.GetSection(StaleOpenVisitsWorkerOptions.SectionName));
@@ -120,6 +125,21 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<ILevelService, LevelService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
+builder.Services.AddScoped<IYooKassaService, YooKassaService>();
+
+builder.Services.AddHttpClient("YooKassaApi");
+builder.Services.AddSingleton(sp =>
+{
+    var opts = sp.GetRequiredService<IOptions<YooKassaOptions>>().Value;
+    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("YooKassaApi");
+    return YooKassaKiotaClientFactory.Create(new YooKassaClientOptions
+    {
+        ShopId = opts.ShopId,
+        SecretKey = opts.SecretKey,
+        HttpClient = http,
+        BaseUrl = string.IsNullOrWhiteSpace(opts.BaseUrl) ? "https://api.yookassa.ru/v3" : opts.BaseUrl
+    });
+});
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();

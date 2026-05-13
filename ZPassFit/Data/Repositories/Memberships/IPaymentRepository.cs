@@ -5,6 +5,8 @@ namespace ZPassFit.Data.Repositories.Memberships;
 public interface IPaymentRepository
 {
     Task<Payment?> GetByIdAsync(Guid id);
+
+    Task<Payment?> GetByYooKassaPaymentIdAsync(string yooKassaPaymentId, CancellationToken cancellationToken = default);
     Task<IEnumerable<Payment>> GetByClientIdAsync(Guid clientId);
     Task AddAsync(Payment payment);
     Task UpdateAsync(Payment payment);

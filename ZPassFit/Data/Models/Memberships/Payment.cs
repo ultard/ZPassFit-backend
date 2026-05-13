@@ -13,7 +13,8 @@ public enum PaymentMethod
 {
     Cash,
     Card,
-    Balance
+    Balance,
+    YooKassa
 }
 
 public class Payment
@@ -31,4 +32,6 @@ public class Payment
 
     public Client Client { get; set; } = null!;
     public Employee? Employee { get; set; }
+    
+    public string? YooKassaPaymentId { get; set; }
 }

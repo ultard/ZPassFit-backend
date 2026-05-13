@@ -13,6 +13,14 @@ public class PaymentRepository(ApplicationDbContext context) : IPaymentRepositor
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
+    public async Task<Payment?> GetByYooKassaPaymentIdAsync(string yooKassaPaymentId,
+        CancellationToken cancellationToken = default)
+    {
+        return await context.Payments
+            .Include(p => p.Client)
+            .FirstOrDefaultAsync(p => p.YooKassaPaymentId == yooKassaPaymentId, cancellationToken);
+    }
+
     public async Task<IEnumerable<Payment>> GetByClientIdAsync(Guid clientId)
     {
         return await context.Payments
