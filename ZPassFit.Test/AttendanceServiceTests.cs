@@ -7,6 +7,7 @@ using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Memberships;
 using ZPassFit.Services.Implementations;
+using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Test;
 
@@ -176,6 +177,7 @@ public class AttendanceServiceTests
         [Frozen] IQrSessionRepository qrRepo,
         [Frozen] IVisitLogRepository visitRepo,
         [Frozen] IMembershipRepository membershipRepo,
+        [Frozen] IBonusLedgerService bonusLedger,
         AttendanceService attendanceService
     )
     {
@@ -214,6 +216,10 @@ public class AttendanceServiceTests
             .Returns(Task.CompletedTask);
 
         membershipRepositoryMock.Setup(r => r.GetByClientIdAsync(clientId)).ReturnsAsync(membership);
+
+        Mock.Get(bonusLedger)
+            .Setup(b => b.BurnExpiredBonusesAsync(clientId, It.IsAny<DateTime>()))
+            .ReturnsAsync(0);
 
         var before = DateTime.UtcNow;
         var result = await attendanceService.CheckInByTokenAsync(token);
@@ -279,6 +285,7 @@ public class AttendanceServiceTests
     public async Task CheckOut_SetsLeaveDate_Updates(
         [Frozen] IClientRepository clientRepo,
         [Frozen] IVisitLogRepository visitRepo,
+        [Frozen] IBonusLedgerService bonusLedger,
         AttendanceService attendanceService
     )
     {
@@ -315,6 +322,13 @@ public class AttendanceServiceTests
         visitLogRepositoryMock.Setup(r => r.GetOpenVisitByClientIdAsync(client.Id)).ReturnsAsync(openVisitLog);
         visitLogRepositoryMock.Setup(r => r.UpdateAsync(openVisitLog)).Returns(Task.CompletedTask);
 
+        Mock.Get(bonusLedger)
+            .Setup(b => b.BurnExpiredBonusesAsync(client.Id, It.IsAny<DateTime>()))
+            .ReturnsAsync(0);
+        Mock.Get(bonusLedger)
+            .Setup(b => b.TryAccrueDisciplineBonusAsync(client, openVisitLog, It.IsAny<DateTime>()))
+            .ReturnsAsync(10);
+
         var before = DateTime.UtcNow;
         var result = await attendanceService.CheckOutAsync(userId);
         var after = DateTime.UtcNow;
@@ -323,8 +337,47 @@ public class AttendanceServiceTests
         Assert.True(openVisitLog.LeaveDate >= before.AddSeconds(-5) && openVisitLog.LeaveDate <= after.AddSeconds(5));
         Assert.Equal(visitId, result.Id);
         Assert.NotNull(result.LeaveDate);
+        Assert.Equal(10, result.DisciplineBonusAccrued);
 
         clientRepositoryMock.VerifyAll();
         visitLogRepositoryMock.VerifyAll();
+    }
+
+    [Theory]
+    [AutoMoqData]
+    public async Task CheckIn_ExpiredMembership_Throws(
+        [Frozen] IQrSessionRepository qrRepo,
+        [Frozen] IVisitLogRepository visitRepo,
+        [Frozen] IMembershipRepository membershipRepo,
+        AttendanceService attendanceService
+    )
+    {
+        var token = Guid.NewGuid();
+        var clientId = Guid.NewGuid();
+        var qrSession = new QrSession
+        {
+            Token = token,
+            CreateDate = DateTime.UtcNow,
+            ExpireDate = DateTime.UtcNow.AddMinutes(5),
+            ClientId = clientId
+        };
+
+        var membership = new Membership
+        {
+            Id = Guid.NewGuid(),
+            ClientId = clientId,
+            PlanId = Guid.NewGuid(),
+            Status = MembershipStatus.Active,
+            ActivatedDate = DateTime.UtcNow.AddDays(-60),
+            ExpireDate = DateTime.UtcNow.AddDays(-1)
+        };
+
+        Mock.Get(qrRepo).Setup(r => r.GetByTokenAsync(token)).ReturnsAsync(qrSession);
+        Mock.Get(visitRepo).Setup(r => r.GetOpenVisitByClientIdAsync(clientId)).ReturnsAsync((VisitLog?)null);
+        Mock.Get(membershipRepo).Setup(r => r.GetByClientIdAsync(clientId)).ReturnsAsync(membership);
+
+        var exception =
+            await Assert.ThrowsAsync<InvalidOperationException>(() => attendanceService.CheckInByTokenAsync(token));
+        Assert.Equal("Membership has expired.", exception.Message);
     }
 }

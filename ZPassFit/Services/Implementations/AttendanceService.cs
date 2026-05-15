@@ -1,4 +1,5 @@
 using ZPassFit.Data.Models.Attendance;
+using ZPassFit.Data.Models.Memberships;
 using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Memberships;
@@ -11,7 +12,8 @@ public class AttendanceService(
     IClientRepository clientRepository,
     IMembershipRepository membershipRepository,
     IQrSessionRepository qrSessionRepository,
-    IVisitLogRepository visitLogRepository
+    IVisitLogRepository visitLogRepository,
+    IBonusLedgerService bonusLedgerService
 ) : IAttendanceService
 {
     public async Task<QrSessionResponse> CreateQrSessionAsync(string userId, TimeSpan? ttl = null)
@@ -49,7 +51,7 @@ public class AttendanceService(
         if (client == null) return [];
 
         var visits = await visitLogRepository.GetVisitHistoryByClientIdAsync(client.Id);
-        return visits.Select(MapVisit);
+        return visits.Select(v => MapVisit(v));
     }
 
     public async Task<VisitLogResponse> CheckInByTokenAsync(Guid token)
@@ -67,11 +69,16 @@ public class AttendanceService(
         var membership = await membershipRepository.GetByClientIdAsync(session.ClientId)
                          ?? throw new InvalidOperationException("Client has no membership.");
 
+        EnsureMembershipAllowsVisit(membership);
+
+        var now = DateTime.UtcNow;
+        await bonusLedgerService.BurnExpiredBonusesAsync(session.ClientId, now);
+
         var visit = new VisitLog
         {
             ClientId = session.ClientId,
             MembershipId = membership.Id,
-            EnterDate = DateTime.UtcNow
+            EnterDate = now
         };
 
         await visitLogRepository.AddAsync(visit);
@@ -88,19 +95,34 @@ public class AttendanceService(
         var open = await visitLogRepository.GetOpenVisitByClientIdAsync(client.Id)
                    ?? throw new InvalidOperationException("Open visit not found.");
 
-        open.LeaveDate = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
+        open.LeaveDate = now;
         await visitLogRepository.UpdateAsync(open);
-        return MapVisit(open);
+
+        await bonusLedgerService.BurnExpiredBonusesAsync(client.Id, now);
+        var bonusAccrued = await bonusLedgerService.TryAccrueDisciplineBonusAsync(client, open, now);
+
+        return MapVisit(open, bonusAccrued);
     }
 
-    private static VisitLogResponse MapVisit(VisitLog visitLog)
+    private static void EnsureMembershipAllowsVisit(Membership membership)
+    {
+        if (membership.Status != MembershipStatus.Active)
+            throw new InvalidOperationException("Membership is not active.");
+
+        if (membership.ExpireDate < DateTime.UtcNow)
+            throw new InvalidOperationException("Membership has expired.");
+    }
+
+    private static VisitLogResponse MapVisit(VisitLog visitLog, int? disciplineBonusAccrued = null)
     {
         return new VisitLogResponse(
             visitLog.Id,
             visitLog.EnterDate,
             visitLog.LeaveDate,
             visitLog.MembershipId,
-            visitLog.ClientId
+            visitLog.ClientId,
+            disciplineBonusAccrued
         );
     }
 }

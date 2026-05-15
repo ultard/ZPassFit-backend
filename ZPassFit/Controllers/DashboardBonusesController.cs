@@ -74,6 +74,7 @@ public class DashboardBonusesController(IBonusTransactionRepository bonusTransac
         return new BonusTransactionListItemResponse(
             t.Id,
             t.Type,
+            t.Amount,
             t.CreateDate,
             t.ExpireDate,
             t.ClientId,

@@ -7,7 +7,8 @@ public record VisitLogResponse(
     DateTime EnterDate,
     DateTime? LeaveDate,
     Guid MembershipId,
-    Guid ClientId
+    Guid ClientId,
+    int? DisciplineBonusAccrued = null
 );
 
 public record VisitLogListItemResponse(

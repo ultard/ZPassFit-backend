@@ -1,4 +1,3 @@
-using System.Net.Http;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -6,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using ZPassFit.Attendance;
 using ZPassFit.Auth;
 using ZPassFit.Dashboard;
 using ZPassFit.Data;
@@ -64,6 +64,9 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptio
 builder.Services.Configure<DashboardOptions>(builder.Configuration.GetSection(DashboardOptions.SectionName));
 builder.Services.Configure<PaymentMethodsOptions>(
     builder.Configuration.GetSection(PaymentMethodsOptions.SectionName));
+var paymentMethods = builder.Configuration
+    .GetSection(PaymentMethodsOptions.SectionName)
+    .Get<PaymentMethodsOptions>() ?? new PaymentMethodsOptions();
 builder.Services.Configure<YooKassaOptions>(
     builder.Configuration.GetSection(YooKassaOptions.SectionName));
 
@@ -73,10 +76,15 @@ builder.Services.Configure<ExpiredGraceLevelsWorkerOptions>(
     builder.Configuration.GetSection(ExpiredGraceLevelsWorkerOptions.SectionName));
 builder.Services.Configure<MembershipAutoRenewWorkerOptions>(
     builder.Configuration.GetSection(MembershipAutoRenewWorkerOptions.SectionName));
+builder.Services.Configure<AttendanceBonusOptions>(
+    builder.Configuration.GetSection(AttendanceBonusOptions.SectionName));
 
-builder.Services.AddHostedService<StaleOpenVisitsWorker>();
-builder.Services.AddHostedService<ExpiredGraceLevelsWorker>();
-builder.Services.AddHostedService<MembershipAutoRenewWorker>();
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddHostedService<StaleOpenVisitsWorker>();
+    builder.Services.AddHostedService<ExpiredGraceLevelsWorker>();
+    builder.Services.AddHostedService<MembershipAutoRenewWorker>();
+}
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
                  ?? throw new InvalidOperationException("Jwt configuration is missing.");
@@ -127,19 +135,23 @@ builder.Services.AddScoped<ILevelService, LevelService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
 builder.Services.AddScoped<IYooKassaService, YooKassaService>();
 
-builder.Services.AddHttpClient("YooKassaApi");
-builder.Services.AddSingleton(sp =>
+if (paymentMethods.YooKassaEnabled)
 {
-    var opts = sp.GetRequiredService<IOptions<YooKassaOptions>>().Value;
-    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("YooKassaApi");
-    return YooKassaKiotaClientFactory.Create(new YooKassaClientOptions
+    builder.Services.AddHttpClient("YooKassaApi");
+    builder.Services.AddSingleton(sp =>
     {
-        ShopId = opts.ShopId,
-        SecretKey = opts.SecretKey,
-        HttpClient = http,
-        BaseUrl = string.IsNullOrWhiteSpace(opts.BaseUrl) ? "https://api.yookassa.ru/v3" : opts.BaseUrl
+        var opts = sp.GetRequiredService<IOptions<YooKassaOptions>>().Value;
+        var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("YooKassaApi");
+        return YooKassaKiotaClientFactory.Create(new YooKassaClientOptions
+        {
+            ShopId = opts.ShopId,
+            SecretKey = opts.SecretKey,
+            HttpClient = http,
+            BaseUrl = string.IsNullOrWhiteSpace(opts.BaseUrl) ? "https://api.yookassa.ru/v3" : opts.BaseUrl
+        });
     });
-});
+}
+builder.Services.AddScoped<IBonusLedgerService, BonusLedgerService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();
@@ -159,14 +171,21 @@ builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+var runE2ESeed = app.Environment.IsEnvironment("Testing") 
+    && string.Equals(
+        Environment.GetEnvironmentVariable("ZPASSFIT_E2E_SEED"), "true", 
+        StringComparison.OrdinalIgnoreCase
+    );
+
+if (app.Environment.IsDevelopment() || runE2ESeed)
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
 
-using (var scope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment("Testing") || runE2ESeed)
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
 

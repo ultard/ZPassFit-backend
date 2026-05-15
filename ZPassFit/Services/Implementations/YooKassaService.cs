@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ZPassFit.Data.Models.Memberships;
 using ZPassFit.Data.Repositories.Clients;
@@ -19,7 +20,7 @@ using YkApiPaymentStatus = ZPassFit.YooKassa.Models.PaymentStatus;
 namespace ZPassFit.Services.Implementations;
 
 public class YooKassaService(
-    YooKassaApiClient yooKassaClient,
+    IServiceProvider serviceProvider,
     IOptions<YooKassaOptions> yooKassaOptions,
     IOptions<PaymentMethodsOptions> paymentMethodsOptions,
     IClientRepository clientRepository,
@@ -30,6 +31,10 @@ public class YooKassaService(
 {
     private readonly YooKassaOptions _yk = yooKassaOptions.Value;
     private readonly PaymentMethodsOptions _pm = paymentMethodsOptions.Value;
+
+    private YooKassaApiClient ApiClient =>
+        serviceProvider.GetService<YooKassaApiClient>()
+        ?? throw new InvalidOperationException("YooKassa API client is not registered.");
 
     public async Task<StartYooKassaCheckoutResponse> StartCheckoutAsync(
         string userId,
@@ -110,7 +115,7 @@ public class YooKassaService(
         YkPayment? created;
         try
         {
-            created = await yooKassaClient.Payments.PostAsync(body,
+            created = await ApiClient.Payments.PostAsync(body,
                 cfg => cfg.AddIdempotenceKey(idempotenceKey),
                 cancellationToken);
         }
@@ -171,7 +176,7 @@ public class YooKassaService(
         YkPayment? yk;
         try
         {
-            yk = await yooKassaClient.Payments[payment.YooKassaPaymentId]
+            yk = await ApiClient.Payments[payment.YooKassaPaymentId]
                 .GetAsync(cancellationToken: cancellationToken);
         }
         catch (Exception ex)

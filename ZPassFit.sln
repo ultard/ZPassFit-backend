@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZPassFit.Benchmarks", "ZPas
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZPassFit.YooKassa", "ZPassFit.YooKassa\ZPassFit.YooKassa.csproj", "{0B80F91E-5027-4E00-BA3F-15159FE728E7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZPassFit.IntegrationTest", "ZPassFit.IntegrationTest\ZPassFit.IntegrationTest.csproj", "{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -73,6 +75,18 @@ Global
 		{0B80F91E-5027-4E00-BA3F-15159FE728E7}.Release|x64.Build.0 = Release|Any CPU
 		{0B80F91E-5027-4E00-BA3F-15159FE728E7}.Release|x86.ActiveCfg = Release|Any CPU
 		{0B80F91E-5027-4E00-BA3F-15159FE728E7}.Release|x86.Build.0 = Release|Any CPU
+		{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}.Debug|x64.Build.0 = Debug|Any CPU
+		{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}.Debug|x86.Build.0 = Debug|Any CPU
+		{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}.Release|x64.ActiveCfg = Release|Any CPU
+		{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}.Release|x64.Build.0 = Release|Any CPU
+		{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}.Release|x86.ActiveCfg = Release|Any CPU
+		{B2CDD402-EBB6-45F8-9F8C-4E18B02080E0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -18,7 +18,7 @@ public static class DevelopmentSeed
     public static async Task EnsureSeededAsync(IServiceProvider services)
     {
         var env = services.GetRequiredService<IHostEnvironment>();
-        if (!env.IsDevelopment())
+        if (!env.IsDevelopment() && !env.IsEnvironment("Testing"))
             return;
 
         var db = services.GetRequiredService<ApplicationDbContext>();
@@ -564,6 +564,7 @@ public static class DevelopmentSeed
                     Id = Guid.NewGuid(),
                     ClientId = client.Id,
                     Type = BonusTransactionType.Accrual,
+                    Amount = 100,
                     CreateDate = today.AddDays(-90).AddHours(10),
                     ExpireDate = today.AddDays(90)
                 },
@@ -572,6 +573,7 @@ public static class DevelopmentSeed
                     Id = Guid.NewGuid(),
                     ClientId = client.Id,
                     Type = BonusTransactionType.Redeem,
+                    Amount = 50,
                     CreateDate = today.AddDays(-7).AddHours(18),
                     ExpireDate = null
                 },
@@ -580,6 +582,7 @@ public static class DevelopmentSeed
                     Id = Guid.NewGuid(),
                     ClientId = client.Id,
                     Type = BonusTransactionType.Adjust,
+                    Amount = 20,
                     CreateDate = today.AddDays(-1).AddHours(12),
                     ExpireDate = null
                 }
@@ -591,6 +594,7 @@ public static class DevelopmentSeed
                     Id = Guid.NewGuid(),
                     ClientId = client.Id,
                     Type = BonusTransactionType.Accrual,
+                    Amount = 80,
                     CreateDate = today.AddDays(-30).AddHours(9),
                     ExpireDate = today.AddDays(60)
                 },
@@ -599,6 +603,7 @@ public static class DevelopmentSeed
                     Id = Guid.NewGuid(),
                     ClientId = client.Id,
                     Type = BonusTransactionType.Expire,
+                    Amount = 30,
                     CreateDate = today.AddDays(-2).AddHours(8),
                     ExpireDate = today.AddDays(-2)
                 }
@@ -610,6 +615,7 @@ public static class DevelopmentSeed
                     Id = Guid.NewGuid(),
                     ClientId = client.Id,
                     Type = BonusTransactionType.Accrual,
+                    Amount = 25,
                     CreateDate = today.AddDays(-14).AddHours(14),
                     ExpireDate = today.AddDays(30)
                 },
@@ -618,6 +624,7 @@ public static class DevelopmentSeed
                     Id = Guid.NewGuid(),
                     ClientId = client.Id,
                     Type = BonusTransactionType.Redeem,
+                    Amount = 15,
                     CreateDate = today.AddDays(-3).AddHours(20),
                     ExpireDate = null
                 }

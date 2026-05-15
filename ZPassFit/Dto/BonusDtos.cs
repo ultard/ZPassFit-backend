@@ -5,6 +5,7 @@ namespace ZPassFit.Dto;
 public record BonusTransactionListItemResponse(
     Guid Id,
     BonusTransactionType Type,
+    int Amount,
     DateTime CreateDate,
     DateTime? ExpireDate,
     Guid ClientId,
