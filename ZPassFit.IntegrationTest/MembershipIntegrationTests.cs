@@ -12,11 +12,13 @@ public sealed class MembershipIntegrationTests(PostgresFixture fixture)
     [Fact]
     public async Task GetPlans_ReturnsNonEmptyList()
     {
-        var response = await _client.GetAsync("/membership/plans");
+        var ct = TestContext.Current.CancellationToken;
+        var response = await _client.GetAsync("/membership/plans", ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var plans = await response.Content.ReadFromJsonAsync<List<MembershipPlanItem>>();
+        var plans =
+            await response.Content.ReadFromJsonAsync<List<MembershipPlanItem>>(cancellationToken: ct);
         Assert.NotNull(plans);
         Assert.NotEmpty(plans);
     }

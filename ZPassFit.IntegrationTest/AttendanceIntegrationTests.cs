@@ -14,16 +14,18 @@ public sealed class AttendanceIntegrationTests(PostgresFixture fixture)
     [Fact]
     public async Task QrSession_ThenCheckIn_ReturnsOk()
     {
-        var clientToken = await _client.LoginAsync("client@dev.local", "DevPassword123!");
-        var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!");
+        var ct = TestContext.Current.CancellationToken;
+        var clientToken = await _client.LoginAsync("client@dev.local", "DevPassword123!", ct);
+        var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!", ct);
 
         using var qrRequest = new HttpRequestMessage(HttpMethod.Post, "/attendance/qr_session");
         qrRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", clientToken);
 
-        var qrResponse = await _client.SendAsync(qrRequest);
+        var qrResponse = await _client.SendAsync(qrRequest, ct);
         Assert.Equal(HttpStatusCode.OK, qrResponse.StatusCode);
 
-        var session = await qrResponse.Content.ReadFromJsonAsync<QrSessionResponse>();
+        var session =
+            await qrResponse.Content.ReadFromJsonAsync<QrSessionResponse>(cancellationToken: ct);
         Assert.NotNull(session);
 
         using var checkinRequest = new HttpRequestMessage(
@@ -32,7 +34,7 @@ public sealed class AttendanceIntegrationTests(PostgresFixture fixture)
         );
         checkinRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
 
-        var checkinResponse = await _client.SendAsync(checkinRequest);
+        var checkinResponse = await _client.SendAsync(checkinRequest, ct);
 
         Assert.Equal(HttpStatusCode.OK, checkinResponse.StatusCode);
     }

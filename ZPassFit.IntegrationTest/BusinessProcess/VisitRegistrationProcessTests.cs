@@ -21,53 +21,59 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
     [Fact]
     public async Task QrCheckInAndCheckOut_UpdatesVisitHistory_WritesAudit()
     {
-        var clientToken = await _client.LoginAsync("client@dev.local", "DevPassword123!");
-        var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!");
+        var ct = TestContext.Current.CancellationToken;
+        var clientToken = await _client.LoginAsync("client@dev.local", "DevPassword123!", ct);
+        var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!", ct);
 
         var qrResponse = await _client.PostAuthenticatedJsonAsync<object?>(
             clientToken,
             "/attendance/qr_session",
-            null
+            null,
+            ct
         );
         Assert.Equal(HttpStatusCode.OK, qrResponse.StatusCode);
-        var session = await qrResponse.Content.ReadFromJsonAsync<QrSessionResponse>();
+        var session = await qrResponse.Content.ReadFromJsonAsync<QrSessionResponse>(cancellationToken: ct);
         Assert.NotNull(session);
 
         var checkinResponse = await _client.SendAuthenticatedAsync(
             adminToken,
             HttpMethod.Post,
-            $"/attendance/checkin/{session.Token}"
+            $"/attendance/checkin/{session.Token}",
+            cancellationToken: ct
         );
         Assert.Equal(HttpStatusCode.OK, checkinResponse.StatusCode);
-        var visit = await checkinResponse.Content.ReadFromJsonAsync<VisitLogResponse>();
+        var visit = await checkinResponse.Content.ReadFromJsonAsync<VisitLogResponse>(cancellationToken: ct);
         Assert.NotNull(visit);
         Assert.Null(visit.LeaveDate);
 
         var checkoutResponse = await _client.PostAuthenticatedJsonAsync<object?>(
             clientToken,
             "/attendance/checkout",
-            null
+            null,
+            ct
         );
         Assert.Equal(HttpStatusCode.OK, checkoutResponse.StatusCode);
-        var closed = await checkoutResponse.Content.ReadFromJsonAsync<VisitLogResponse>();
+        var closed = await checkoutResponse.Content.ReadFromJsonAsync<VisitLogResponse>(cancellationToken: ct);
         Assert.NotNull(closed);
         Assert.NotNull(closed.LeaveDate);
 
         var historyResponse = await _client.GetAuthenticatedAsync(
             clientToken,
-            "/attendance/visits/history"
+            "/attendance/visits/history",
+            ct
         );
         historyResponse.EnsureSuccessStatusCode();
-        var history = await historyResponse.Content.ReadFromJsonAsync<List<VisitLogResponse>>();
+        var history = await historyResponse.Content.ReadFromJsonAsync<List<VisitLogResponse>>(cancellationToken: ct);
         Assert.NotNull(history);
         Assert.Contains(history, v => v.Id == visit.Id && v.LeaveDate != null);
 
         var auditResponse = await _client.GetAuthenticatedAsync(
             adminToken,
-            "/audit?entityType=VisitLog&action=Insert&pageSize=10"
+            "/audit?entityType=VisitLog&action=Insert&pageSize=10",
+            ct
         );
         auditResponse.EnsureSuccessStatusCode();
-        var audit = await auditResponse.Content.ReadFromJsonAsync<PagedAuditLogsResponse>();
+        var audit = await auditResponse.Content.ReadFromJsonAsync<PagedAuditLogsResponse>(cancellationToken: ct);
         Assert.NotNull(audit);
         Assert.Contains(audit.Items, i => i.EntityType.Contains("VisitLog", StringComparison.Ordinal));
     }
@@ -75,40 +81,44 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
     [Fact]
     public async Task CheckOut_AccruesDisciplineBonus_AndWritesBonusAudit()
     {
-        var clientToken = await _client.LoginAsync("client2@dev.local", "DevPassword123!");
-        var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!");
+        var ct = TestContext.Current.CancellationToken;
+        var clientToken = await _client.LoginAsync("client2@dev.local", "DevPassword123!", ct);
+        var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!", ct);
 
         int bonusesBefore;
         using (var scope = fixture.Factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var client = await db.Clients.SingleAsync(c => c.Email == "client2@dev.local");
+            var client = await db.Clients.SingleAsync(c => c.Email == "client2@dev.local", ct);
             bonusesBefore = client.Bonuses;
         }
 
         var qrResponse = await _client.PostAuthenticatedJsonAsync<object?>(
             clientToken,
             "/attendance/qr_session",
-            null
+            null,
+            ct
         );
         qrResponse.EnsureSuccessStatusCode();
-        var session = await qrResponse.Content.ReadFromJsonAsync<QrSessionResponse>();
+        var session = await qrResponse.Content.ReadFromJsonAsync<QrSessionResponse>(cancellationToken: ct);
         Assert.NotNull(session);
 
         var checkinResponse = await _client.SendAuthenticatedAsync(
             adminToken,
             HttpMethod.Post,
-            $"/attendance/checkin/{session.Token}"
+            $"/attendance/checkin/{session.Token}",
+            cancellationToken: ct
         );
         checkinResponse.EnsureSuccessStatusCode();
 
         var checkoutResponse = await _client.PostAuthenticatedJsonAsync<object?>(
             clientToken,
             "/attendance/checkout",
-            null
+            null,
+            ct
         );
         checkoutResponse.EnsureSuccessStatusCode();
-        var closed = await checkoutResponse.Content.ReadFromJsonAsync<VisitLogResponse>();
+        var closed = await checkoutResponse.Content.ReadFromJsonAsync<VisitLogResponse>(cancellationToken: ct);
         Assert.NotNull(closed);
 
         int expectedBonus;
@@ -124,11 +134,13 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
         using (var scope = fixture.Factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var client = await db.Clients.SingleAsync(c => c.Email == "client2@dev.local");
+            var client = await db.Clients.SingleAsync(c => c.Email == "client2@dev.local", ct);
             Assert.Equal(bonusesBefore + expectedBonus, client.Bonuses);
 
-            var accrual = await db.BonusTransactions.SingleAsync(t =>
-                t.VisitLogId == closed.Id && t.Type == ZPassFit.Data.Models.Clients.BonusTransactionType.Accrual);
+            var accrual = await db.BonusTransactions.SingleAsync(
+                t => t.VisitLogId == closed.Id && t.Type == ZPassFit.Data.Models.Clients.BonusTransactionType.Accrual,
+                ct
+            );
             Assert.Equal(expectedBonus, accrual.Amount);
         }
     }
@@ -136,6 +148,7 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
     [Fact]
     public async Task CheckIn_WithoutMembership_ReturnsBadRequest()
     {
+        var ct = TestContext.Current.CancellationToken;
         Guid token;
         Membership? removedMembership = null;
         try
@@ -143,13 +156,13 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
             using (var scope = fixture.Factory.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var client = await db.Clients.SingleAsync(c => c.Email == "client2@dev.local");
-                var membership = await db.Memberships.SingleOrDefaultAsync(m => m.ClientId == client.Id);
+                var client = await db.Clients.SingleAsync(c => c.Email == "client2@dev.local", ct);
+                var membership = await db.Memberships.SingleOrDefaultAsync(m => m.ClientId == client.Id, ct);
                 if (membership is not null)
                 {
                     removedMembership = membership;
                     db.Memberships.Remove(membership);
-                    await db.SaveChangesAsync();
+                    await db.SaveChangesAsync(ct);
                 }
 
                 token = Guid.NewGuid();
@@ -162,14 +175,15 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
                         ExpireDate = DateTime.UtcNow.AddMinutes(5)
                     }
                 );
-                await db.SaveChangesAsync();
+                await db.SaveChangesAsync(ct);
             }
 
-            var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!");
+            var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!", ct);
             var checkinResponse = await _client.SendAuthenticatedAsync(
                 adminToken,
                 HttpMethod.Post,
-                $"/attendance/checkin/{token}"
+                $"/attendance/checkin/{token}",
+                cancellationToken: ct
             );
 
             Assert.Equal(HttpStatusCode.BadRequest, checkinResponse.StatusCode);
@@ -180,7 +194,10 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
             {
                 using var scope = fixture.Factory.Services.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var hasMembership = await db.Memberships.AnyAsync(m => m.ClientId == removedMembership.ClientId);
+                var hasMembership = await db.Memberships.AnyAsync(
+                    m => m.ClientId == removedMembership.ClientId,
+                    ct
+                );
                 if (!hasMembership)
                 {
                     db.Memberships.Add(new Membership
@@ -192,7 +209,7 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
                         ExpireDate = removedMembership.ExpireDate,
                         AutoRenewEnabled = removedMembership.AutoRenewEnabled
                     });
-                    await db.SaveChangesAsync();
+                    await db.SaveChangesAsync(ct);
                 }
             }
         }

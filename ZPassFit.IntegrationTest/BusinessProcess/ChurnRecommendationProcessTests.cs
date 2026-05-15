@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using ZPassFit.Data.Models.Memberships;
 using ZPassFit.Dto;
 using ZPassFit.IntegrationTest.Infrastructure;
 
@@ -18,31 +19,37 @@ public sealed class ChurnRecommendationProcessTests(PostgresFixture fixture)
     [Fact]
     public async Task PredictChurn_ForClientWithHistory_ReturnsAiRecommendation()
     {
-        var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!");
+        var ct = TestContext.Current.CancellationToken;
+        var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!", ct);
 
         var clientsResponse = await _client.GetAuthenticatedAsync(
             adminToken,
-            "/dashboard/clients?search=client3@dev.local&pageSize=5"
+            "/dashboard/clients?search=client3@dev.local&pageSize=5",
+            ct
         );
         clientsResponse.EnsureSuccessStatusCode();
-        var clients = await clientsResponse.Content.ReadFromJsonAsync<PagedClientsResponse>();
+        var clients =
+            await clientsResponse.Content.ReadFromJsonAsync<PagedClientsResponse>(cancellationToken: ct);
         Assert.NotNull(clients);
         var client = Assert.Single(clients.Items);
 
         var levelBefore = await _client.GetAuthenticatedAsync(
             adminToken,
-            $"/dashboard/clients/{client.Id}"
+            $"/dashboard/clients/{client.Id}",
+            ct
         );
         levelBefore.EnsureSuccessStatusCode();
 
         var predictResponse = await _client.PostAuthenticatedJsonAsync(
             adminToken,
             "/prediction/churn",
-            new ChurnPredictionRequest(client.Id)
+            new ChurnPredictionRequest(client.Id),
+            ct
         );
         Assert.Equal(HttpStatusCode.OK, predictResponse.StatusCode);
 
-        var prediction = await predictResponse.Content.ReadFromJsonAsync<ChurnPredictionResponse>();
+        var prediction =
+            await predictResponse.Content.ReadFromJsonAsync<ChurnPredictionResponse>(cancellationToken: ct);
         Assert.NotNull(prediction);
         Assert.Equal(0, prediction.Prediction);
         Assert.Equal(StubPredictionService.StubProbability, prediction.Probability, precision: 5);
@@ -51,34 +58,70 @@ public sealed class ChurnRecommendationProcessTests(PostgresFixture fixture)
     [Fact]
     public async Task PredictChurn_ClientWithoutMembership_ReturnsNotFound()
     {
-        var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!");
+        var ct = TestContext.Current.CancellationToken;
+        var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!", ct);
 
         var clientsResponse = await _client.GetAuthenticatedAsync(
             adminToken,
-            "/dashboard/clients?search=client2@dev.local&pageSize=5"
+            "/dashboard/clients?search=client2@dev.local&pageSize=5",
+            ct
         );
         clientsResponse.EnsureSuccessStatusCode();
-        var clients = await clientsResponse.Content.ReadFromJsonAsync<PagedClientsResponse>();
+        var clients =
+            await clientsResponse.Content.ReadFromJsonAsync<PagedClientsResponse>(cancellationToken: ct);
         Assert.NotNull(clients);
         var client = Assert.Single(clients.Items);
 
-        using (var scope = fixture.Factory.Services.CreateScope())
+        Membership? removedMembership = null;
+        try
         {
-            var db = scope.ServiceProvider.GetRequiredService<ZPassFit.Data.ApplicationDbContext>();
-            var membership = await db.Memberships.SingleOrDefaultAsync(m => m.ClientId == client.Id);
-            if (membership is not null)
+            using (var scope = fixture.Factory.Services.CreateScope())
             {
-                db.Memberships.Remove(membership);
-                await db.SaveChangesAsync();
+                var db = scope.ServiceProvider.GetRequiredService<ZPassFit.Data.ApplicationDbContext>();
+                var membership = await db.Memberships.SingleOrDefaultAsync(m => m.ClientId == client.Id, ct);
+                if (membership is not null)
+                {
+                    removedMembership = membership;
+                    db.Memberships.Remove(membership);
+                    await db.SaveChangesAsync(ct);
+                }
+            }
+
+            var predictResponse = await _client.PostAuthenticatedJsonAsync(
+                adminToken,
+                "/prediction/churn",
+                new ChurnPredictionRequest(client.Id),
+                ct
+            );
+
+            Assert.Equal(HttpStatusCode.NotFound, predictResponse.StatusCode);
+        }
+        finally
+        {
+            if (removedMembership is not null)
+            {
+                using var scope = fixture.Factory.Services.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<ZPassFit.Data.ApplicationDbContext>();
+                var hasMembership = await db.Memberships.AnyAsync(
+                    m => m.ClientId == removedMembership.ClientId,
+                    ct
+                );
+                if (!hasMembership)
+                {
+                    db.Memberships.Add(
+                        new Membership
+                        {
+                            ClientId = removedMembership.ClientId,
+                            PlanId = removedMembership.PlanId,
+                            Status = removedMembership.Status,
+                            ActivatedDate = removedMembership.ActivatedDate,
+                            ExpireDate = removedMembership.ExpireDate,
+                            AutoRenewEnabled = removedMembership.AutoRenewEnabled
+                        }
+                    );
+                    await db.SaveChangesAsync(ct);
+                }
             }
         }
-
-        var predictResponse = await _client.PostAuthenticatedJsonAsync(
-            adminToken,
-            "/prediction/churn",
-            new ChurnPredictionRequest(client.Id)
-        );
-
-        Assert.Equal(HttpStatusCode.NotFound, predictResponse.StatusCode);
     }
 }

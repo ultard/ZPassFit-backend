@@ -17,17 +17,18 @@ public sealed class MembershipPurchaseProcessTests(PostgresFixture fixture)
     [Fact]
     public async Task PurchaseWithBalance_ActivatesMembership_RecordsPayment_DecreasesBalance_WritesAudit()
     {
-        var token = await _client.LoginAsync("client3@dev.local", "DevPassword123!");
-        var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!");
+        var ct = TestContext.Current.CancellationToken;
+        var token = await _client.LoginAsync("client3@dev.local", "DevPassword123!", ct);
+        var adminToken = await _client.LoginAsync("admin@dev.local", "DevPassword123!", ct);
 
-        var profileBefore = await _client.GetAuthenticatedAsync(token, "/client/profile");
+        var profileBefore = await _client.GetAuthenticatedAsync(token, "/client/profile", ct);
         profileBefore.EnsureSuccessStatusCode();
-        var profile = await profileBefore.Content.ReadFromJsonAsync<ClientResponse>();
+        var profile = await profileBefore.Content.ReadFromJsonAsync<ClientResponse>(cancellationToken: ct);
         Assert.NotNull(profile);
 
-        var plansResponse = await _client.GetAsync("/membership/plans");
+        var plansResponse = await _client.GetAsync("/membership/plans", ct);
         plansResponse.EnsureSuccessStatusCode();
-        var plans = await plansResponse.Content.ReadFromJsonAsync<List<MembershipPlanResponse>>();
+        var plans = await plansResponse.Content.ReadFromJsonAsync<List<MembershipPlanResponse>>(cancellationToken: ct);
         Assert.NotNull(plans);
         Assert.NotEmpty(plans);
 
@@ -37,33 +38,38 @@ public sealed class MembershipPurchaseProcessTests(PostgresFixture fixture)
         var buyResponse = await _client.PostAuthenticatedJsonAsync(
             token,
             "/membership/buy",
-            new BuyMembershipRequest(plan.Id, duration, PaymentMethod.Balance)
+            new BuyMembershipRequest(plan.Id, duration, PaymentMethod.Balance),
+            ct
         );
         Assert.Equal(HttpStatusCode.OK, buyResponse.StatusCode);
 
-        var membership = await buyResponse.Content.ReadFromJsonAsync<MembershipResponse>();
+        var membership =
+            await buyResponse.Content.ReadFromJsonAsync<MembershipResponse>(cancellationToken: ct);
         Assert.NotNull(membership);
         Assert.Equal(MembershipStatus.Active, membership.Status);
         Assert.Equal(plan.Id, membership.PlanId);
 
-        var paymentsResponse = await _client.GetAuthenticatedAsync(token, "/client/payments");
+        var paymentsResponse = await _client.GetAuthenticatedAsync(token, "/client/payments", ct);
         paymentsResponse.EnsureSuccessStatusCode();
-        var payments = await paymentsResponse.Content.ReadFromJsonAsync<List<PaymentResponse>>();
+        var payments =
+            await paymentsResponse.Content.ReadFromJsonAsync<List<PaymentResponse>>(cancellationToken: ct);
         Assert.NotNull(payments);
         Assert.Contains(payments, p => p.Method == PaymentMethod.Balance && p.Status == PaymentStatus.Completed);
 
-        var profileAfter = await _client.GetAuthenticatedAsync(token, "/client/profile");
+        var profileAfter = await _client.GetAuthenticatedAsync(token, "/client/profile", ct);
         profileAfter.EnsureSuccessStatusCode();
-        var profileUpdated = await profileAfter.Content.ReadFromJsonAsync<ClientResponse>();
+        var profileUpdated =
+            await profileAfter.Content.ReadFromJsonAsync<ClientResponse>(cancellationToken: ct);
         Assert.NotNull(profileUpdated);
         Assert.True(profileUpdated.Balance < profile.Balance);
 
         var auditResponse = await _client.GetAuthenticatedAsync(
             adminToken,
-            "/audit?entityType=Payment&action=Insert&pageSize=5"
+            "/audit?entityType=Payment&action=Insert&pageSize=5",
+            ct
         );
         auditResponse.EnsureSuccessStatusCode();
-        var audit = await auditResponse.Content.ReadFromJsonAsync<PagedAuditLogsResponse>();
+        var audit = await auditResponse.Content.ReadFromJsonAsync<PagedAuditLogsResponse>(cancellationToken: ct);
         Assert.NotNull(audit);
         Assert.Contains(audit.Items, i => i.EntityType.Contains("Payment", StringComparison.Ordinal));
     }
@@ -71,11 +77,13 @@ public sealed class MembershipPurchaseProcessTests(PostgresFixture fixture)
     [Fact]
     public async Task PurchaseWithInvalidDuration_ReturnsBadRequest()
     {
-        var token = await _client.LoginAsync("client2@dev.local", "DevPassword123!");
+        var ct = TestContext.Current.CancellationToken;
+        var token = await _client.LoginAsync("client2@dev.local", "DevPassword123!", ct);
 
-        var plansResponse = await _client.GetAsync("/membership/plans");
+        var plansResponse = await _client.GetAsync("/membership/plans", ct);
         plansResponse.EnsureSuccessStatusCode();
-        var plans = await plansResponse.Content.ReadFromJsonAsync<List<MembershipPlanResponse>>();
+        var plans =
+            await plansResponse.Content.ReadFromJsonAsync<List<MembershipPlanResponse>>(cancellationToken: ct);
         Assert.NotNull(plans);
 
         var planWithDurations = plans.First(p => p.Durations.Length > 0);
@@ -88,7 +96,8 @@ public sealed class MembershipPurchaseProcessTests(PostgresFixture fixture)
                 planWithDurations.Id,
                 invalidDuration,
                 PaymentMethod.Balance
-            )
+            ),
+            ct
         );
 
         Assert.Equal(HttpStatusCode.BadRequest, buyResponse.StatusCode);

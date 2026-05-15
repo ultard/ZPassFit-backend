@@ -12,12 +12,13 @@ public sealed class DashboardIntegrationTests(PostgresFixture fixture)
     [Fact]
     public async Task ListClients_AsAdmin_ReturnsOk()
     {
-        var token = await _client.LoginAsync("admin@dev.local", "DevPassword123!");
+        var ct = TestContext.Current.CancellationToken;
+        var token = await _client.LoginAsync("admin@dev.local", "DevPassword123!", ct);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/dashboard/clients");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var response = await _client.SendAsync(request);
+        var response = await _client.SendAsync(request, ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
