@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 using ZPassFit.Data;
-using ZPassFit.Data.Dev;
+using ZPassFit.Data.Seed;
 
 namespace ZPassFit.IntegrationTest.Infrastructure;
 

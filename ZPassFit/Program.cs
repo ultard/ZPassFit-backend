@@ -10,7 +10,7 @@ using ZPassFit.Auth;
 using ZPassFit.Dashboard;
 using ZPassFit.Data;
 using ZPassFit.Data.Audit;
-using ZPassFit.Data.Dev;
+using ZPassFit.Data.Seed;
 using ZPassFit.Data.Models;
 using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Audit;
@@ -78,6 +78,7 @@ builder.Services.Configure<MembershipAutoRenewWorkerOptions>(
     builder.Configuration.GetSection(MembershipAutoRenewWorkerOptions.SectionName));
 builder.Services.Configure<AttendanceBonusOptions>(
     builder.Configuration.GetSection(AttendanceBonusOptions.SectionName));
+builder.Services.Configure<SeedOptions>(builder.Configuration.GetSection(SeedOptions.SectionName));
 
 if (!builder.Environment.IsEnvironment("Testing"))
 {
@@ -189,7 +190,10 @@ if (!app.Environment.IsEnvironment("Testing") || runE2ESeed)
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
 
-    await DevelopmentSeed.EnsureSeededAsync(scope.ServiceProvider);
+    if (app.Environment.IsDevelopment() || runE2ESeed)
+        await DevelopmentSeed.EnsureSeededAsync(scope.ServiceProvider);
+    else if (app.Environment.IsProduction())
+        await ProductionSeed.EnsureSeededAsync(scope.ServiceProvider);
 }
 
 app.UseHttpsRedirection();

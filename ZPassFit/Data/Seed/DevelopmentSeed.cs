@@ -6,7 +6,7 @@ using ZPassFit.Data.Models.Attendance;
 using ZPassFit.Data.Models.Clients;
 using ZPassFit.Data.Models.Memberships;
 
-namespace ZPassFit.Data.Dev;
+namespace ZPassFit.Data.Seed;
 
 public static class DevelopmentSeed
 {
@@ -25,17 +25,17 @@ public static class DevelopmentSeed
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-        await EnsureRolesAsync(roleManager);
+        await ReferenceDataSeed.EnsureRolesAsync(roleManager);
 
         var (employeeUsers, clientUsers) = await EnsureUsersAsync(userManager);
 
         var employees = await EnsureEmployeesAsync(db, employeeUsers);
         var clients = await EnsureClientsAsync(db, clientUsers);
 
-        var levels = await EnsureLevelsAsync(db);
+        var levels = await ReferenceDataSeed.EnsureLevelsAsync(db);
         await EnsureClientLevelsAsync(db, clients, levels);
 
-        var plans = await EnsurePlansAsync(db);
+        var plans = await ReferenceDataSeed.EnsurePlansAsync(db);
 
         foreach (var client in clients)
         {
@@ -43,19 +43,6 @@ public static class DevelopmentSeed
             await EnsureVisitsAsync(db, client, membership);
             await EnsurePaymentsAsync(db, client, employees);
             await EnsureBonusTransactionsAsync(db, client);
-        }
-    }
-
-    private static async Task EnsureRolesAsync(RoleManager<IdentityRole> roleManager)
-    {
-        foreach (var role in new[] { Roles.Admin, Roles.Employee, Roles.Client })
-        {
-            if (await roleManager.RoleExistsAsync(role))
-                continue;
-
-            var res = await roleManager.CreateAsync(new IdentityRole(role));
-            if (!res.Succeeded)
-                throw new InvalidOperationException("Failed to create role: " + role);
         }
     }
 
@@ -260,58 +247,6 @@ public static class DevelopmentSeed
         return res;
     }
 
-    private static async Task<List<Level>> EnsureLevelsAsync(ApplicationDbContext db)
-    {
-        var levelSpecs = new List<(string Name, int ActivateDays, int GraceDays, string? Previous)>
-        {
-            ("Bronze", 0, 7, null),
-            ("Silver", 30, 10, "Bronze"),
-            ("Gold", 90, 14, "Silver")
-        };
-
-        foreach (var spec in levelSpecs)
-        {
-            var exists = await db.Levels.AnyAsync(l => l.Name == spec.Name);
-            if (exists) continue;
-
-            db.Levels.Add(new Level
-            {
-                Name = spec.Name,
-                ActivateDays = spec.ActivateDays,
-                GraceDays = spec.GraceDays
-            });
-        }
-
-        await db.SaveChangesAsync();
-
-        var levels = await db.Levels
-            .Where(l => levelSpecs.Select(s => s.Name).Contains(l.Name))
-            .OrderBy(l => l.ActivateDays)
-            .ToListAsync();
-
-        var byName = levels.ToDictionary(l => l.Name, l => l);
-        var changed = false;
-        foreach (var spec in levelSpecs)
-        {
-            if (spec.Previous == null) continue;
-            var level = byName[spec.Name];
-            var prev = byName[spec.Previous];
-            if (level.PreviousLevelId != prev.Id)
-            {
-                level.PreviousLevelId = prev.Id;
-                changed = true;
-            }
-        }
-
-        if (changed)
-        {
-            db.Levels.UpdateRange(levels);
-            await db.SaveChangesAsync();
-        }
-
-        return levels;
-    }
-
     private static async Task EnsureClientLevelsAsync(
         ApplicationDbContext db,
         List<Client> clients,
@@ -393,37 +328,6 @@ public static class DevelopmentSeed
         db.Clients.Add(client);
         await db.SaveChangesAsync();
         return client;
-    }
-
-    private static async Task<List<MembershipPlan>> EnsurePlansAsync(ApplicationDbContext db)
-    {
-        var planSpecs = new[]
-        {
-            new { Name = "Basic", Description = "30 дней, 1 клуб", Durations = new[] { 30 }, Price = 1990 },
-            new { Name = "Standard", Description = "90 дней, 1 клуб", Durations = new[] { 90 }, Price = 4990 },
-            new { Name = "Pro", Description = "365 дней, все клубы", Durations = new[] { 365 }, Price = 14990 }
-        };
-
-        foreach (var spec in planSpecs)
-        {
-            var exists = await db.MembershipPlans.AnyAsync(p => p.Name == spec.Name);
-            if (exists) continue;
-
-            db.MembershipPlans.Add(new MembershipPlan
-            {
-                Name = spec.Name,
-                Description = spec.Description,
-                Durations = spec.Durations,
-                Price = spec.Price
-            });
-        }
-
-        await db.SaveChangesAsync();
-
-        return await db.MembershipPlans
-            .Where(p => planSpecs.Select(s => s.Name).Contains(p.Name))
-            .OrderBy(p => p.Id)
-            .ToListAsync();
     }
 
     private static async Task<Membership> EnsureMembershipAsync(

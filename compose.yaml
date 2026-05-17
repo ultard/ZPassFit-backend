@@ -21,7 +21,7 @@ services:
     image: zpassfit-backend
     <<: [ *common, *env ]
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
 
   zpassfit-postgres:
     image: postgres:alpine
