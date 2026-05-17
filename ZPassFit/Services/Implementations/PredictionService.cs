@@ -1,3 +1,4 @@
+using ZPassFit.Data.Models.Attendance;
 using ZPassFit.Data.Models.Clients;
 using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Clients;
@@ -29,12 +30,12 @@ public class PredictionService(
         var last4wBorder = now.AddDays(-28);
         var prev4wBorder = now.AddDays(-56);
 
-        var visitsLast7d = visitHistory.Count(v => v.EnterDate >= last7dBorder);
-        var visitsLast4w = visitHistory.Count(v => v.EnterDate >= last4wBorder);
-        var visitsPrev4w = visitHistory.Count(v => v.EnterDate >= prev4wBorder && v.EnterDate < last4wBorder);
+        var visitsLast7d = CountDistinctVisitDays(visitHistory, last7dBorder);
+        var visitsLast4w = CountDistinctVisitDays(visitHistory, last4wBorder);
+        var visitsPrev4w = CountDistinctVisitDays(visitHistory, prev4wBorder, last4wBorder);
         var visitsPerWeek = visitsLast4w / 4.0;
 
-        var lastVisitDate = visitHistory.Select(v => (DateTime?)v.EnterDate).Max();
+        var lastVisitDate = visitHistory.Select(v => (DateTime?)v.EnterDate.Date).Max();
         var daysSinceLastVisit = lastVisitDate.HasValue
             ? Math.Max(0, (int)(now.Date - lastVisitDate.Value.Date).TotalDays)
             : 365;
@@ -67,6 +68,19 @@ public class PredictionService(
         {
             throw new InvalidOperationException("Prediction service unavailable.", exception);
         }
+    }
+
+    private static int CountDistinctVisitDays(
+        IEnumerable<VisitLog> visits,
+        DateTime fromUtcInclusive,
+        DateTime? toUtcExclusive = null
+    )
+    {
+        return visits
+            .Where(v => v.EnterDate >= fromUtcInclusive && (toUtcExclusive == null || v.EnterDate < toUtcExclusive))
+            .Select(v => v.EnterDate.Date)
+            .Distinct()
+            .Count();
     }
 
     private static int CalculateAge(DateTime birthDate, DateTime now)
