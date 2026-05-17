@@ -16,7 +16,6 @@ namespace ZPassFit.Controllers;
 [Route("[controller]")]
 public class MembershipController(
     IMembershipService membershipService,
-    IYooKassaService yooKassaService,
     IOptions<PaymentMethodsOptions> paymentMethodsOptions
 ) : ControllerBase
 {
@@ -73,54 +72,6 @@ public class MembershipController(
                 "Редирект на страницу оплаты ЮKassa."));
 
         return Results.Ok(new PaymentMethodsSettingsResponse(methods));
-    }
-
-    [HttpPost("yookassa/checkout")]
-    [Authorize(Roles = Roles.Client)]
-    [EndpointSummary("Оплатить абонемент через ЮKassa")]
-    [EndpointDescription(
-        "Создаёт платеж в ЮKassa и возвращает URL для перехода пользователя на страницу оплаты.")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StartYooKassaCheckoutResponse))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IResult> StartYooKassaCheckout([FromBody] StartYooKassaCheckoutRequest request)
-    {
-        var user = HttpContext.GetRequiredCurrentApplicationUser();
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
-
-        try
-        {
-            var result = await yooKassaService.StartCheckoutAsync(user.Id, request, ip);
-            return Results.Ok(result);
-        }
-        catch (InvalidOperationException e)
-        {
-            return Results.BadRequest(new { error = e.Message });
-        }
-    }
-
-    [HttpPost("yookassa/sync/{paymentId:guid}")]
-    [Authorize(Roles = Roles.Client)]
-    [EndpointSummary("Синхронизировать статус платежа ЮKassa")]
-    [EndpointDescription(
-        "Запрашивает актуальный статус платежа в API ЮKassa и при успехе активирует абонемент.")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SyncYooKassaPaymentResponse))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status502BadGateway)]
-    public async Task<IResult> SyncYooKassaPayment(Guid paymentId)
-    {
-        var user = HttpContext.GetRequiredCurrentApplicationUser();
-        var r = await yooKassaService.SyncPaymentFromApiAsync(user.Id, paymentId);
-
-        return r.Code switch
-        {
-            "forbidden" => Results.Json(r, statusCode: StatusCodes.Status403Forbidden),
-            "not_found" => Results.Json(r, statusCode: StatusCodes.Status404NotFound),
-            "not_applicable" => Results.Json(r, statusCode: StatusCodes.Status400BadRequest),
-            "api_error" => Results.Json(r, statusCode: StatusCodes.Status502BadGateway),
-            _ => Results.Ok(r)
-        };
     }
 
     [HttpPost("buy")]

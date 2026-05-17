@@ -48,13 +48,12 @@ public record PaymentMethodsSettingsResponse(
 
 public record StartYooKassaCheckoutRequest(
     Guid PlanId,
-    int DurationDays
+    int DurationDays,
+    string ReturnUrl
 );
 
 public record StartYooKassaCheckoutResponse(
-    Guid PaymentId,
-    string ConfirmationUrl,
-    string YooKassaPaymentId
+    string ConfirmationUrl
 );
 
 public record SyncYooKassaPaymentResponse(

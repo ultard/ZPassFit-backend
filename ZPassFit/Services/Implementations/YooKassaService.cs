@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ZPassFit.Data.Models.Memberships;
 using ZPassFit.Data.Repositories.Clients;
@@ -48,8 +47,8 @@ public class YooKassaService(
         if (string.IsNullOrWhiteSpace(_yk.ShopId) || string.IsNullOrWhiteSpace(_yk.SecretKey))
             throw new InvalidOperationException("YooKassa is not configured (ShopId / SecretKey).");
 
-        if (string.IsNullOrWhiteSpace(_yk.ReturnUrl))
-            throw new InvalidOperationException("YooKassa ReturnUrl is not configured.");
+        if (string.IsNullOrWhiteSpace(request.ReturnUrl))
+            throw new InvalidOperationException("ReturnUrl not provided.");
 
         var client = await clientRepository.GetByUserIdAsync(userId)
                      ?? throw new InvalidOperationException("Client profile not found.");
@@ -100,7 +99,7 @@ public class YooKassaService(
                 {
                     Type = ConfirmationDataType.Redirect,
                     ReturnUrl = AppendQueryParam(
-                        _yk.ReturnUrl,
+                        request.ReturnUrl,
                         "paymentId",
                         dbPayment.Id.ToString("D"))
                 }
@@ -136,7 +135,7 @@ public class YooKassaService(
         dbPayment.YooKassaPaymentId = created.Id;
         await paymentRepository.UpdateAsync(dbPayment);
 
-        return new StartYooKassaCheckoutResponse(dbPayment.Id, confirmationUrl, created.Id);
+        return new StartYooKassaCheckoutResponse(confirmationUrl);
     }
 
     public async Task<SyncYooKassaPaymentResponse> SyncPaymentFromApiAsync(
