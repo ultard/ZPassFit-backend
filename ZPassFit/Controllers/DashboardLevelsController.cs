@@ -6,8 +6,8 @@ using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Controllers;
 
-[Authorize(Roles = Roles.AdminOrEmployee)]
 [ApiController]
+[Authorize(Roles = Roles.Admin)]
 [Tags("Дашборд — уровни")]
 [Route("dashboard/levels")]
 public class DashboardLevelsController(ILevelService levelService) : ControllerBase

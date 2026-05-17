@@ -6,8 +6,8 @@ using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Controllers;
 
-[Authorize(Roles = Roles.AdminOrEmployee)]
 [ApiController]
+[Authorize(Roles = Roles.Admin)]
 [Tags("Дашборд — тарифы")]
 [Route("dashboard/membership-plans")]
 public class DashboardMembershipPlansController(IMembershipService membershipService) : ControllerBase
