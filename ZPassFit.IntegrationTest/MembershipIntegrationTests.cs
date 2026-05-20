@@ -18,7 +18,7 @@ public sealed class MembershipIntegrationTests(PostgresFixture fixture)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var plans =
-            await response.Content.ReadFromJsonAsync<List<MembershipPlanItem>>(cancellationToken: ct);
+            await response.Content.ReadFromJsonAsync<List<MembershipPlanItem>>(ct);
         Assert.NotNull(plans);
         Assert.NotEmpty(plans);
     }

@@ -25,7 +25,7 @@ public sealed class AttendanceIntegrationTests(PostgresFixture fixture)
         Assert.Equal(HttpStatusCode.OK, qrResponse.StatusCode);
 
         var session =
-            await qrResponse.Content.ReadFromJsonAsync<QrSessionResponse>(cancellationToken: ct);
+            await qrResponse.Content.ReadFromJsonAsync<QrSessionResponse>(ct);
         Assert.NotNull(session);
 
         using var checkinRequest = new HttpRequestMessage(

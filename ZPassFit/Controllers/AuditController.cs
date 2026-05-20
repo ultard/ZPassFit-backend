@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ZPassFit.Auth;
 using ZPassFit.Data.Models.Audit;
 using ZPassFit.Data.Repositories.Audit;
 using ZPassFit.Dto;
+using ZPassFit.Options.Auth;
 
 namespace ZPassFit.Controllers;
 

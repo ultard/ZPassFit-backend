@@ -1,4 +1,4 @@
-namespace ZPassFit.Dashboard;
+namespace ZPassFit.Options.Dashboard;
 
 public static class DashboardPeriodCalculator
 {
@@ -17,10 +17,6 @@ public static class DashboardPeriodCalculator
         }
     }
 
-    /// <summary>
-    ///     Возвращает календарный год и месяц в <paramref name="clubTimeZone" /> для «сейчас»,
-    ///     либо проверяет пару query-параметров year/month.
-    /// </summary>
     public static (int Year, int Month) ResolveTargetMonth(
         TimeZoneInfo clubTimeZone,
         DateTime utcNow,
@@ -49,10 +45,6 @@ public static class DashboardPeriodCalculator
         return (queryYear.Value, queryMonth.Value);
     }
 
-    /// <summary>
-    ///     Полуночь первого дня месяца по локальному времени клуба до полуночи первого дня следующего месяца — в виде
-    ///     UTC-инстантов.
-    /// </summary>
     public static (DateTime FromUtcInclusive, DateTime ToUtcExclusive) GetMonthUtcRange(
         TimeZoneInfo clubTimeZone,
         int year,

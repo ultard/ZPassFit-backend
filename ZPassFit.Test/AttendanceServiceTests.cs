@@ -253,8 +253,6 @@ public class AttendanceServiceTests
         var clientRepositoryMock = Mock.Get(clientRepo);
         var visitLogRepositoryMock = Mock.Get(visitRepo);
 
-        var visitId = Guid.NewGuid();
-        var membershipId = Guid.NewGuid();
         var client = new Client
         {
             Id = Guid.NewGuid(),

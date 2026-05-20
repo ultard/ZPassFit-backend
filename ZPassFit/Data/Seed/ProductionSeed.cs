@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
-using ZPassFit.Auth;
 using ZPassFit.Data.Models;
+using ZPassFit.Options.Auth;
 
 namespace ZPassFit.Data.Seed;
 

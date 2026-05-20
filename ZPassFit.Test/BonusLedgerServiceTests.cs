@@ -1,29 +1,45 @@
+using AutoFixture.Xunit3;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using ZPassFit.Attendance;
+using Moq;
 using ZPassFit.Data;
 using ZPassFit.Data.Models.Attendance;
 using ZPassFit.Data.Models.Clients;
 using ZPassFit.Data.Repositories.Clients;
+using ZPassFit.Options.Attendance;
 using ZPassFit.Services.Implementations;
 
 namespace ZPassFit.Test;
 
 public class BonusLedgerServiceTests
 {
-    [Fact]
-    public async Task TryAccrueDisciplineBonus_OnCheckout_IncreasesClientBonuses()
+    [Theory]
+    [AutoMoqData]
+    public async Task TryAccrueDisciplineBonus_OnCheckout_IncreasesClientBonuses(
+        [Frozen] Mock<IClientRepository> clientRepo,
+        [Frozen] Mock<IBonusTransactionRepository> bonusRepo,
+        Mock<IOptions<AttendanceBonusOptions>> bonusOptionsMock
+    )
     {
-        var options = Options.Create(
-            new AttendanceBonusOptions
-            {
-                DisciplineBonusPoints = 15,
-                BonusValidityDays = 30,
-                MinVisitDurationMinutes = 0
-            }
-        );
+        bonusOptionsMock
+            .Setup(o => o.Value)
+            .Returns(
+                new AttendanceBonusOptions
+                {
+                    DisciplineBonusPoints = 15,
+                    BonusValidityDays = 30,
+                    MinVisitDurationMinutes = 0
+                }
+            );
+
+        clientRepo
+            .Setup(r => r.UpdateAsync(It.Is<Client>(c => c.Bonuses == 20)))
+            .Returns(Task.CompletedTask);
+        bonusRepo.Setup(r => r.AddAsync(It.IsAny<BonusTransaction>())).Returns(Task.CompletedTask);
 
         await using var db = CreateDb();
+        var sut = new BonusLedgerService(db, clientRepo.Object, bonusRepo.Object, bonusOptionsMock.Object);
+
         var client = new Client
         {
             Id = Guid.NewGuid(),
@@ -37,12 +53,6 @@ public class BonusLedgerServiceTests
             Email = "bonus@test.local",
             Bonuses = 5
         };
-        db.Clients.Add(client);
-        await db.SaveChangesAsync();
-
-        var clientRepo = new ClientRepository(db);
-        var bonusRepo = new BonusTransactionRepository(db);
-        var sut = new BonusLedgerService(db, clientRepo, bonusRepo, options);
 
         var visit = new VisitLog
         {
@@ -56,14 +66,34 @@ public class BonusLedgerServiceTests
         var accrued = await sut.TryAccrueDisciplineBonusAsync(client, visit, DateTime.UtcNow);
 
         Assert.Equal(15, accrued);
-        var reloaded = await db.Clients.SingleAsync(c => c.Id == client.Id);
-        Assert.Equal(20, reloaded.Bonuses);
+        Assert.Equal(20, client.Bonuses);
+        clientRepo.Verify(r => r.UpdateAsync(It.Is<Client>(c => c.Bonuses == 20)), Times.Once);
+        bonusRepo.Verify(
+            r =>
+                r.AddAsync(
+                    It.Is<BonusTransaction>(t =>
+                        t.ClientId == client.Id
+                        && t.Type == BonusTransactionType.Accrual
+                        && t.Amount == 15
+                        && t.VisitLogId == visit.Id
+                    )
+                ),
+            Times.Once
+        );
     }
 
-    [Fact]
-    public async Task BurnExpiredBonuses_ReducesBalanceAndCreatesExpireTransaction()
+    [Theory]
+    [AutoMoqData]
+    public async Task BurnExpiredBonuses_ReducesBalanceAndCreatesExpireTransaction(
+        [Frozen] Mock<IClientRepository> clientRepo,
+        [Frozen] Mock<IBonusTransactionRepository> bonusRepo,
+        Mock<IOptions<AttendanceBonusOptions>> bonusOptionsMock
+    )
     {
-        var options = Options.Create(new AttendanceBonusOptions());
+        bonusOptionsMock.Setup(o => o.Value).Returns(new AttendanceBonusOptions());
+
+        clientRepo.Setup(r => r.UpdateAsync(It.IsAny<Client>())).Returns(Task.CompletedTask);
+        bonusRepo.Setup(r => r.AddAsync(It.IsAny<BonusTransaction>())).Returns(Task.CompletedTask);
 
         await using var db = CreateDb();
         var client = new Client
@@ -92,20 +122,26 @@ public class BonusLedgerServiceTests
                 ExpireDate = DateTime.UtcNow.AddDays(-1)
             }
         );
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var clientRepo = new ClientRepository(db);
-        var bonusRepo = new BonusTransactionRepository(db);
-        var sut = new BonusLedgerService(db, clientRepo, bonusRepo, options);
+        var sut = new BonusLedgerService(db, clientRepo.Object, bonusRepo.Object, bonusOptionsMock.Object);
 
         var burned = await sut.BurnExpiredBonusesAsync(client.Id, DateTime.UtcNow);
 
         Assert.Equal(40, burned);
-        var reloaded = await db.Clients.SingleAsync(c => c.Id == client.Id);
-        Assert.Equal(0, reloaded.Bonuses);
-        Assert.True(
-            await db.BonusTransactions.AnyAsync(t =>
-                t.Type == BonusTransactionType.Expire && t.RelatedTransactionId == accrualId)
+        Assert.Equal(0, client.Bonuses);
+        clientRepo.Verify(r => r.UpdateAsync(It.Is<Client>(c => c.Id == client.Id && c.Bonuses == 0)), Times.Once);
+        bonusRepo.Verify(
+            r =>
+                r.AddAsync(
+                    It.Is<BonusTransaction>(t =>
+                        t.Type == BonusTransactionType.Expire
+                        && t.RelatedTransactionId == accrualId
+                        && t.Amount == 40
+                        && t.ClientId == client.Id
+                    )
+                ),
+            Times.Once
         );
     }
 

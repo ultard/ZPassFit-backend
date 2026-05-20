@@ -14,7 +14,7 @@ public interface IYooKassaService
     Task HandleNotificationAsync(JsonElement root, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Запросить актуальный статус платежа в ЮKassa и при необходимости завершить покупку (дублирует обработку webhook).
+    ///     Запросить актуальный статус платежа в ЮKassa и при необходимости завершить покупку (дублирует обработку webhook).
     /// </summary>
     Task<SyncYooKassaPaymentResponse> SyncPaymentFromApiAsync(
         string userId,

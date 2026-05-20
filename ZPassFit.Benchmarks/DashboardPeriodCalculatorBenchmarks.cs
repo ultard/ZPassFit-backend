@@ -1,5 +1,5 @@
 using BenchmarkDotNet.Attributes;
-using ZPassFit.Dashboard;
+using ZPassFit.Options.Dashboard;
 
 namespace ZPassFit.Benchmarks;
 

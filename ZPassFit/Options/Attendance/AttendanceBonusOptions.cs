@@ -1,4 +1,4 @@
-namespace ZPassFit.Attendance;
+namespace ZPassFit.Options.Attendance;
 
 public class AttendanceBonusOptions
 {

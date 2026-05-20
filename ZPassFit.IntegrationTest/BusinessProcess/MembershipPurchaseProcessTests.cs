@@ -6,9 +6,6 @@ using ZPassFit.IntegrationTest.Infrastructure;
 
 namespace ZPassFit.IntegrationTest.BusinessProcess;
 
-/// <summary>
-/// БП 1: Покупка и активация абонемента.
-/// </summary>
 [Collection(IntegrationTestCollection.Name)]
 public sealed class MembershipPurchaseProcessTests(PostgresFixture fixture)
 {
@@ -23,12 +20,12 @@ public sealed class MembershipPurchaseProcessTests(PostgresFixture fixture)
 
         var profileBefore = await _client.GetAuthenticatedAsync(token, "/client/profile", ct);
         profileBefore.EnsureSuccessStatusCode();
-        var profile = await profileBefore.Content.ReadFromJsonAsync<ClientResponse>(cancellationToken: ct);
+        var profile = await profileBefore.Content.ReadFromJsonAsync<ClientResponse>(ct);
         Assert.NotNull(profile);
 
         var plansResponse = await _client.GetAsync("/membership/plans", ct);
         plansResponse.EnsureSuccessStatusCode();
-        var plans = await plansResponse.Content.ReadFromJsonAsync<List<MembershipPlanResponse>>(cancellationToken: ct);
+        var plans = await plansResponse.Content.ReadFromJsonAsync<List<MembershipPlanResponse>>(ct);
         Assert.NotNull(plans);
         Assert.NotEmpty(plans);
 
@@ -44,7 +41,7 @@ public sealed class MembershipPurchaseProcessTests(PostgresFixture fixture)
         Assert.Equal(HttpStatusCode.OK, buyResponse.StatusCode);
 
         var membership =
-            await buyResponse.Content.ReadFromJsonAsync<MembershipResponse>(cancellationToken: ct);
+            await buyResponse.Content.ReadFromJsonAsync<MembershipResponse>(ct);
         Assert.NotNull(membership);
         Assert.Equal(MembershipStatus.Active, membership.Status);
         Assert.Equal(plan.Id, membership.PlanId);
@@ -52,14 +49,14 @@ public sealed class MembershipPurchaseProcessTests(PostgresFixture fixture)
         var paymentsResponse = await _client.GetAuthenticatedAsync(token, "/client/payments", ct);
         paymentsResponse.EnsureSuccessStatusCode();
         var payments =
-            await paymentsResponse.Content.ReadFromJsonAsync<List<PaymentResponse>>(cancellationToken: ct);
+            await paymentsResponse.Content.ReadFromJsonAsync<List<PaymentResponse>>(ct);
         Assert.NotNull(payments);
         Assert.Contains(payments, p => p.Method == PaymentMethod.Balance && p.Status == PaymentStatus.Completed);
 
         var profileAfter = await _client.GetAuthenticatedAsync(token, "/client/profile", ct);
         profileAfter.EnsureSuccessStatusCode();
         var profileUpdated =
-            await profileAfter.Content.ReadFromJsonAsync<ClientResponse>(cancellationToken: ct);
+            await profileAfter.Content.ReadFromJsonAsync<ClientResponse>(ct);
         Assert.NotNull(profileUpdated);
         Assert.True(profileUpdated.Balance < profile.Balance);
 
@@ -69,7 +66,7 @@ public sealed class MembershipPurchaseProcessTests(PostgresFixture fixture)
             ct
         );
         auditResponse.EnsureSuccessStatusCode();
-        var audit = await auditResponse.Content.ReadFromJsonAsync<PagedAuditLogsResponse>(cancellationToken: ct);
+        var audit = await auditResponse.Content.ReadFromJsonAsync<PagedAuditLogsResponse>(ct);
         Assert.NotNull(audit);
         Assert.Contains(audit.Items, i => i.EntityType.Contains("Payment", StringComparison.Ordinal));
     }
@@ -83,7 +80,7 @@ public sealed class MembershipPurchaseProcessTests(PostgresFixture fixture)
         var plansResponse = await _client.GetAsync("/membership/plans", ct);
         plansResponse.EnsureSuccessStatusCode();
         var plans =
-            await plansResponse.Content.ReadFromJsonAsync<List<MembershipPlanResponse>>(cancellationToken: ct);
+            await plansResponse.Content.ReadFromJsonAsync<List<MembershipPlanResponse>>(ct);
         Assert.NotNull(plans);
 
         var planWithDurations = plans.First(p => p.Durations.Length > 0);

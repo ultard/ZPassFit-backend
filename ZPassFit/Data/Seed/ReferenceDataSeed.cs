@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using ZPassFit.Auth;
 using ZPassFit.Data.Models.Clients;
 using ZPassFit.Data.Models.Memberships;
+using ZPassFit.Options.Auth;
 
 namespace ZPassFit.Data.Seed;
 

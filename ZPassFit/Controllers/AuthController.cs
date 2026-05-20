@@ -2,11 +2,11 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using ZPassFit.Auth;
 using ZPassFit.Data.Models;
 using ZPassFit.Data.Models.Clients;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Dto;
+using ZPassFit.Options.Auth;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Controllers;

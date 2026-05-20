@@ -1,4 +1,4 @@
-namespace ZPassFit.Auth;
+namespace ZPassFit.Options.Auth;
 
 public class JwtOptions
 {

@@ -23,7 +23,7 @@ public sealed class AuthIntegrationTests(PostgresFixture fixture)
         var response = await _client.SendAsync(request, ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var profile = await response.Content.ReadFromJsonAsync<ClientResponse>(cancellationToken: ct);
+        var profile = await response.Content.ReadFromJsonAsync<ClientResponse>(ct);
         Assert.NotNull(profile);
         Assert.Equal("client@dev.local", profile.Email);
     }

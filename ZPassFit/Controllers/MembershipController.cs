@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using ZPassFit.Auth;
 using ZPassFit.Data.Models.Memberships;
 using ZPassFit.Dto;
 using ZPassFit.Middleware;
-using ZPassFit.Payments;
+using ZPassFit.Options.Auth;
+using ZPassFit.Options.Payments;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Controllers;
@@ -43,19 +43,19 @@ public class MembershipController(
         var o = paymentMethodsOptions.Value;
         var methods = new List<PaymentMethodSettingResponse>
         {
-            new PaymentMethodSettingResponse(
+            new(
                 PaymentMethod.Cash,
                 "cash",
                 "Наличные",
                 o.CashEnabled,
                 "Оплата на ресепшене клуба."),
-            new PaymentMethodSettingResponse(
+            new(
                 PaymentMethod.Card,
                 "card",
                 "Банковская карта",
                 o.CardEnabled,
                 "Оплата картой на ресепшене или через эквайринг (по настройке клуба)."),
-            new PaymentMethodSettingResponse(
+            new(
                 PaymentMethod.Balance,
                 "balance",
                 "Баланс клиента",

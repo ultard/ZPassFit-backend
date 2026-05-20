@@ -2,17 +2,17 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using ZPassFit.Attendance;
+using Microsoft.Extensions.Options;
 using ZPassFit.Data;
+using ZPassFit.Data.Models.Attendance;
+using ZPassFit.Data.Models.Clients;
 using ZPassFit.Data.Models.Memberships;
 using ZPassFit.Dto;
 using ZPassFit.IntegrationTest.Infrastructure;
+using ZPassFit.Options.Attendance;
 
 namespace ZPassFit.IntegrationTest.BusinessProcess;
 
-/// <summary>
-/// БП 2: Регистрация посещения (QR → check-in → check-out).
-/// </summary>
 [Collection(IntegrationTestCollection.Name)]
 public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
 {
@@ -32,7 +32,7 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
             ct
         );
         Assert.Equal(HttpStatusCode.OK, qrResponse.StatusCode);
-        var session = await qrResponse.Content.ReadFromJsonAsync<QrSessionResponse>(cancellationToken: ct);
+        var session = await qrResponse.Content.ReadFromJsonAsync<QrSessionResponse>(ct);
         Assert.NotNull(session);
 
         var checkinResponse = await _client.SendAuthenticatedAsync(
@@ -42,7 +42,7 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
             cancellationToken: ct
         );
         Assert.Equal(HttpStatusCode.OK, checkinResponse.StatusCode);
-        var visit = await checkinResponse.Content.ReadFromJsonAsync<VisitLogResponse>(cancellationToken: ct);
+        var visit = await checkinResponse.Content.ReadFromJsonAsync<VisitLogResponse>(ct);
         Assert.NotNull(visit);
         Assert.Null(visit.LeaveDate);
 
@@ -53,7 +53,7 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
             ct
         );
         Assert.Equal(HttpStatusCode.OK, checkoutResponse.StatusCode);
-        var closed = await checkoutResponse.Content.ReadFromJsonAsync<VisitLogResponse>(cancellationToken: ct);
+        var closed = await checkoutResponse.Content.ReadFromJsonAsync<VisitLogResponse>(ct);
         Assert.NotNull(closed);
         Assert.NotNull(closed.LeaveDate);
 
@@ -63,7 +63,7 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
             ct
         );
         historyResponse.EnsureSuccessStatusCode();
-        var history = await historyResponse.Content.ReadFromJsonAsync<List<VisitLogResponse>>(cancellationToken: ct);
+        var history = await historyResponse.Content.ReadFromJsonAsync<List<VisitLogResponse>>(ct);
         Assert.NotNull(history);
         Assert.Contains(history, v => v.Id == visit.Id && v.LeaveDate != null);
 
@@ -73,7 +73,7 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
             ct
         );
         auditResponse.EnsureSuccessStatusCode();
-        var audit = await auditResponse.Content.ReadFromJsonAsync<PagedAuditLogsResponse>(cancellationToken: ct);
+        var audit = await auditResponse.Content.ReadFromJsonAsync<PagedAuditLogsResponse>(ct);
         Assert.NotNull(audit);
         Assert.Contains(audit.Items, i => i.EntityType.Contains("VisitLog", StringComparison.Ordinal));
     }
@@ -100,7 +100,7 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
             ct
         );
         qrResponse.EnsureSuccessStatusCode();
-        var session = await qrResponse.Content.ReadFromJsonAsync<QrSessionResponse>(cancellationToken: ct);
+        var session = await qrResponse.Content.ReadFromJsonAsync<QrSessionResponse>(ct);
         Assert.NotNull(session);
 
         var checkinResponse = await _client.SendAuthenticatedAsync(
@@ -118,14 +118,14 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
             ct
         );
         checkoutResponse.EnsureSuccessStatusCode();
-        var closed = await checkoutResponse.Content.ReadFromJsonAsync<VisitLogResponse>(cancellationToken: ct);
+        var closed = await checkoutResponse.Content.ReadFromJsonAsync<VisitLogResponse>(ct);
         Assert.NotNull(closed);
 
         int expectedBonus;
         using (var optionsScope = fixture.Factory.Services.CreateScope())
         {
             expectedBonus = optionsScope.ServiceProvider
-                .GetRequiredService<Microsoft.Extensions.Options.IOptions<AttendanceBonusOptions>>()
+                .GetRequiredService<IOptions<AttendanceBonusOptions>>()
                 .Value.DisciplineBonusPoints;
         }
 
@@ -138,7 +138,7 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
             Assert.Equal(bonusesBefore + expectedBonus, client.Bonuses);
 
             var accrual = await db.BonusTransactions.SingleAsync(
-                t => t.VisitLogId == closed.Id && t.Type == ZPassFit.Data.Models.Clients.BonusTransactionType.Accrual,
+                t => t.VisitLogId == closed.Id && t.Type == BonusTransactionType.Accrual,
                 ct
             );
             Assert.Equal(expectedBonus, accrual.Amount);
@@ -167,7 +167,7 @@ public sealed class VisitRegistrationProcessTests(PostgresFixture fixture)
 
                 token = Guid.NewGuid();
                 db.QrSessions.Add(
-                    new ZPassFit.Data.Models.Attendance.QrSession
+                    new QrSession
                     {
                         Token = token,
                         ClientId = client.Id,

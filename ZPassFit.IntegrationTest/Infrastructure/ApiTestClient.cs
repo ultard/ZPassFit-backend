@@ -25,7 +25,7 @@ public static class ApiTestClient
 
         var body = await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions, cancellationToken);
         return body?.AccessToken
-            ?? throw new InvalidOperationException("Login response did not include an access token.");
+               ?? throw new InvalidOperationException("Login response did not include an access token.");
     }
 
     public static async Task<HttpResponseMessage> SendAuthenticatedAsync(
@@ -47,7 +47,10 @@ public static class ApiTestClient
         string accessToken,
         string url,
         CancellationToken cancellationToken = default
-    ) => client.SendAuthenticatedAsync(accessToken, HttpMethod.Get, url, cancellationToken: cancellationToken);
+    )
+    {
+        return client.SendAuthenticatedAsync(accessToken, HttpMethod.Get, url, cancellationToken: cancellationToken);
+    }
 
     public static Task<HttpResponseMessage> PostAuthenticatedJsonAsync<T>(
         this HttpClient client,
@@ -55,12 +58,14 @@ public static class ApiTestClient
         string url,
         T body,
         CancellationToken cancellationToken = default
-    ) =>
-        client.SendAuthenticatedAsync(
+    )
+    {
+        return client.SendAuthenticatedAsync(
             accessToken,
             HttpMethod.Post,
             url,
             JsonContent.Create(body, options: JsonOptions),
             cancellationToken
         );
+    }
 }

@@ -6,7 +6,7 @@ using Microsoft.Kiota.Abstractions.Authentication;
 namespace ZPassFit.YooKassa;
 
 /// <summary>
-/// HTTP Basic authentication as required by the YooKassa REST API (<c>shopId:secretKey</c>, Base64).
+///     HTTP Basic authentication as required by the YooKassa REST API (<c>shopId:secretKey</c>, Base64).
 /// </summary>
 public sealed class YooKassaBasicAuthenticationProvider : IAuthenticationProvider
 {

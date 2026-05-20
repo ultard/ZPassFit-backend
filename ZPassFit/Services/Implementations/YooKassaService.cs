@@ -5,7 +5,7 @@ using ZPassFit.Data.Models.Memberships;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Memberships;
 using ZPassFit.Dto;
-using ZPassFit.Payments;
+using ZPassFit.Options.Payments;
 using ZPassFit.Services.Interfaces;
 using ZPassFit.YooKassa;
 using ZPassFit.YooKassa.Models;
@@ -28,8 +28,8 @@ public class YooKassaService(
     IPaymentRepository paymentRepository
 ) : IYooKassaService
 {
-    private readonly YooKassaOptions _yk = yooKassaOptions.Value;
     private readonly PaymentMethodsOptions _pm = paymentMethodsOptions.Value;
+    private readonly YooKassaOptions _yk = yooKassaOptions.Value;
 
     private YooKassaApiClient ApiClient =>
         serviceProvider.GetService<YooKassaApiClient>()
@@ -193,21 +193,17 @@ public class YooKassaService(
             case YkApiPaymentStatus.Succeeded:
                 if (!TryGetMetadataFromModel(yk.Metadata, "plan_id", out var planIdStr)
                     || !Guid.TryParse(planIdStr, out var planId))
-                {
                     return new SyncYooKassaPaymentResponse(
                         "api_error",
                         statusLabel,
                         "В метаданных нет plan_id.");
-                }
 
                 if (!TryGetMetadataFromModel(yk.Metadata, "duration_days", out var durationStr)
                     || !int.TryParse(durationStr, CultureInfo.InvariantCulture, out var durationDays))
-                {
                     return new SyncYooKassaPaymentResponse(
                         "api_error",
                         statusLabel,
                         "В метаданных нет duration_days.");
-                }
 
                 if (!ValidateAmountFromYk(yk, payment.Amount))
                     return new SyncYooKassaPaymentResponse("api_error", statusLabel, "Сумма не совпадает.");
@@ -215,12 +211,10 @@ public class YooKassaService(
                 if (TryGetMetadataFromModel(yk.Metadata, "internal_payment_id", out var mid)
                     && Guid.TryParse(mid, out var metaPid)
                     && metaPid != payment.Id)
-                {
                     return new SyncYooKassaPaymentResponse(
                         "api_error",
                         statusLabel,
                         "internal_payment_id не совпадает с записью.");
-                }
 
                 await ApplyMembershipPurchaseAsync(
                     payment,
@@ -357,7 +351,8 @@ public class YooKassaService(
 
         payment ??= await paymentRepository.GetByYooKassaPaymentIdAsync(ykId, cancellationToken);
 
-        if (payment is null || payment.Status != DomainPaymentStatus.Pending || payment.Method != DomainPaymentMethod.YooKassa)
+        if (payment is null || payment.Status != DomainPaymentStatus.Pending ||
+            payment.Method != DomainPaymentMethod.YooKassa)
             return;
 
         payment.Status = DomainPaymentStatus.Cancelled;
@@ -407,8 +402,9 @@ public class YooKassaService(
         return !string.IsNullOrEmpty(value);
     }
 
-    private static string MetadataValueToString(object raw) =>
-        raw switch
+    private static string MetadataValueToString(object raw)
+    {
+        return raw switch
         {
             string s => s,
             JsonElement { ValueKind: JsonValueKind.String } je => je.GetString() ?? "",
@@ -416,6 +412,7 @@ public class YooKassaService(
             JsonElement je => je.ToString(),
             _ => raw.ToString() ?? ""
         };
+    }
 
     private static bool TryGetMetadataString(JsonElement obj, string key, out string value)
     {
@@ -430,11 +427,15 @@ public class YooKassaService(
         return !string.IsNullOrEmpty(value);
     }
 
-    private static string FormatRubAmount(int rubles) =>
-        rubles.ToString("F2", CultureInfo.InvariantCulture);
+    private static string FormatRubAmount(int rubles)
+    {
+        return rubles.ToString("F2", CultureInfo.InvariantCulture);
+    }
 
-    private static string Truncate(string s, int maxLen) =>
-        s.Length <= maxLen ? s : s[..maxLen];
+    private static string Truncate(string s, int maxLen)
+    {
+        return s.Length <= maxLen ? s : s[..maxLen];
+    }
 
     private static string AppendQueryParam(string url, string key, string value)
     {

@@ -1,16 +1,12 @@
 using System.Text;
-using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
-using ZPassFit.Attendance;
-using ZPassFit.Auth;
-using ZPassFit.Dashboard;
 using ZPassFit.Data;
 using ZPassFit.Data.Audit;
-using ZPassFit.Data.Seed;
 using ZPassFit.Data.Models;
 using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Audit;
@@ -18,13 +14,17 @@ using ZPassFit.Data.Repositories.Auth;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Employees;
 using ZPassFit.Data.Repositories.Memberships;
+using ZPassFit.Data.Seed;
 using ZPassFit.Middleware;
 using ZPassFit.OpenApi;
-using ZPassFit.Payments;
-using ZPassFit.YooKassa;
+using ZPassFit.Options.Attendance;
+using ZPassFit.Options.Auth;
+using ZPassFit.Options.Dashboard;
+using ZPassFit.Options.Payments;
 using ZPassFit.Services.Implementations;
 using ZPassFit.Services.Interfaces;
 using ZPassFit.Workers;
+using ZPassFit.YooKassa;
 using PredictionService = ZPassFit.Services.Implementations.PredictionService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -152,6 +152,7 @@ if (paymentMethods.YooKassaEnabled)
         });
     });
 }
+
 builder.Services.AddScoped<IBonusLedgerService, BonusLedgerService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
@@ -172,11 +173,11 @@ builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
-var runE2ESeed = app.Environment.IsEnvironment("Testing") 
-    && string.Equals(
-        Environment.GetEnvironmentVariable("ZPASSFIT_E2E_SEED"), "true", 
-        StringComparison.OrdinalIgnoreCase
-    );
+var runE2ESeed = app.Environment.IsEnvironment("Testing")
+                 && string.Equals(
+                     Environment.GetEnvironmentVariable("ZPASSFIT_E2E_SEED"), "true",
+                     StringComparison.OrdinalIgnoreCase
+                 );
 
 if (app.Environment.IsDevelopment() || runE2ESeed)
 {

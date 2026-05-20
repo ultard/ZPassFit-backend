@@ -1,11 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
 using BenchmarkDotNet.Attributes;
-using Microsoft.Extensions.Options;
 using Moq;
-using ZPassFit.Auth;
 using ZPassFit.Data.Models;
 using ZPassFit.Data.Repositories.Auth;
+using ZPassFit.Options.Auth;
 using ZPassFit.Services.Implementations;
 using ZPassFit.Services.Interfaces;
 
@@ -31,7 +30,7 @@ public class JwtTokenServiceBenchmarks
             RefreshTokenExpirationDays = 30
         };
 
-        var options = Options.Create(jwt);
+        var options = Microsoft.Extensions.Options.Options.Create(jwt);
         var refreshRepo = new Mock<IRefreshTokenRepository>(MockBehavior.Strict);
         var identity = new Mock<IApplicationUserIdentityService>(MockBehavior.Strict);
 
@@ -39,7 +38,7 @@ public class JwtTokenServiceBenchmarks
 
         identity
             .Setup(s => s.GetRolesAsync(_user, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { "Admin", "Coach" });
+            .ReturnsAsync(["Admin", "Coach"]);
 
         refreshRepo
             .Setup(r => r.AddAndSaveAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))

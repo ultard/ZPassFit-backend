@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using ZPassFit.Attendance;
 using ZPassFit.Data;
 using ZPassFit.Data.Models.Attendance;
 using ZPassFit.Data.Models.Clients;
 using ZPassFit.Data.Repositories.Clients;
+using ZPassFit.Options.Attendance;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Services.Implementations;

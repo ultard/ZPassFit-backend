@@ -6,12 +6,12 @@ using Microsoft.Kiota.Serialization.Json;
 namespace ZPassFit.YooKassa;
 
 /// <summary>
-/// Builds <see cref="YooKassaApiClient"/> with YooKassa Basic Auth and Kiota <see cref="IRequestAdapter"/>.
+///     Builds <see cref="YooKassaApiClient" /> with YooKassa Basic Auth and Kiota <see cref="IRequestAdapter" />.
 /// </summary>
 public static class YooKassaKiotaClientFactory
 {
     /// <summary>
-    /// Creates the Kiota API client using shop credentials from <paramref name="options"/>.
+    ///     Creates the Kiota API client using shop credentials from <paramref name="options" />.
     /// </summary>
     public static YooKassaApiClient Create(YooKassaClientOptions options)
     {
@@ -22,7 +22,7 @@ public static class YooKassaKiotaClientFactory
     }
 
     /// <summary>
-    /// Creates a <see cref="IRequestAdapter"/> configured for YooKassa (for custom wiring or tests).
+    ///     Creates a <see cref="IRequestAdapter" /> configured for YooKassa (for custom wiring or tests).
     /// </summary>
     public static IRequestAdapter CreateRequestAdapter(YooKassaClientOptions options)
     {

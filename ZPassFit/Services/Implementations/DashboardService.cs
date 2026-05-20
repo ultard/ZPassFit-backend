@@ -1,11 +1,11 @@
 using System.Globalization;
 using Microsoft.Extensions.Options;
-using ZPassFit.Dashboard;
 using ZPassFit.Data.Repositories;
 using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Memberships;
 using ZPassFit.Dto;
+using ZPassFit.Options.Dashboard;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Services.Implementations;
@@ -143,7 +143,6 @@ public class DashboardService(IOptions<DashboardOptions> dashboardOptions, IServ
         CancellationToken cancellationToken
     )
     {
-        // Отдельный scope на запрос: один DbContext не поддерживает параллельные операции.
         var visitsSelectedTask = RunInScopeAsync(
             scopeFactory,
             sp =>

@@ -180,7 +180,7 @@ public class ClientServiceTests
         var result = await clientService.GetMyActiveLevelAsync(userId);
 
         Assert.NotNull(result);
-        Assert.Equal(clientLevelId, result!.ClientLevelId);
+        Assert.Equal(clientLevelId, result.ClientLevelId);
         Assert.Equal(clientLevel.ReceiveDate, result.ReceiveDate);
         Assert.Equal(levelId, result.Level.Id);
         Assert.Equal("Gold", result.Level.Name);
@@ -278,7 +278,7 @@ public class ClientServiceTests
         var result = await clientService.GetMyActiveLevelAsync(userId);
 
         Assert.NotNull(result);
-        Assert.Equal(silverId, result!.NextLevel!.Id);
+        Assert.Equal(silverId, result.NextLevel!.Id);
         Assert.Equal("Silver", result.NextLevel.Name);
         Assert.Equal(30, result.NextLevel.ActivateDays);
         Assert.Equal(18, result.RemainingDaysToNextLevel);
@@ -492,7 +492,7 @@ public class ClientServiceTests
         var result = await svc.CreditBalanceAsync(id, 1000);
 
         Assert.NotNull(result);
-        Assert.Equal(1500, result!.Balance);
+        Assert.Equal(1500, result.Balance);
         clientRepo.Verify(r => r.UpdateAsync(It.IsAny<Client>()), Times.Once);
     }
 
@@ -602,7 +602,7 @@ public class ClientServiceTests
                 ClientGender.Female));
 
         Assert.NotNull(result);
-        Assert.Equal("Новиков", result!.LastName);
+        Assert.Equal("Новиков", result.LastName);
         clientRepo.Verify(r => r.UpdateAsync(It.IsAny<Client>()), Times.Once);
     }
 }

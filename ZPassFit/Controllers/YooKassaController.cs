@@ -1,13 +1,13 @@
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
-using ZPassFit.Auth;
 using ZPassFit.Dto;
 using ZPassFit.Middleware;
-using ZPassFit.Payments;
+using ZPassFit.Options.Auth;
+using ZPassFit.Options.Payments;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Controllers;
@@ -37,7 +37,7 @@ public class YooKassaController(
         await yooKassaService.HandleNotificationAsync(doc.RootElement, cancellationToken);
         return Results.Ok();
     }
-    
+
     [HttpPost("checkout")]
     [Authorize(Roles = Roles.Client)]
     [EndpointSummary("Оплатить абонемент через ЮKassa")]

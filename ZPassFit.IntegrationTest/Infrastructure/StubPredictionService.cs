@@ -6,7 +6,7 @@ using ZPassFit.Services.Interfaces;
 namespace ZPassFit.IntegrationTest.Infrastructure;
 
 /// <summary>
-/// Заглушка ИИ-модуля для сквозных тестов бизнес-процесса «анализ и рекомендация».
+///     Заглушка ИИ-модуля для сквозных тестов бизнес-процесса «анализ и рекомендация».
 /// </summary>
 public sealed class StubPredictionService(
     IClientRepository clientRepository,
@@ -28,6 +28,6 @@ public sealed class StubPredictionService(
         if (membership is null)
             return null;
 
-        return new ChurnPredictionResponse(Prediction: 0, Probability: StubProbability);
+        return new ChurnPredictionResponse(0, StubProbability);
     }
 }

@@ -3,7 +3,7 @@ using ZPassFit.Data.Models.Memberships;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Memberships;
 using ZPassFit.Dto;
-using ZPassFit.Payments;
+using ZPassFit.Options.Payments;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Services.Implementations;

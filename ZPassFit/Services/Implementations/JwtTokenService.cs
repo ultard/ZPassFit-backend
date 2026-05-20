@@ -4,9 +4,9 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using ZPassFit.Auth;
 using ZPassFit.Data.Models;
 using ZPassFit.Data.Repositories.Auth;
+using ZPassFit.Options.Auth;
 using ZPassFit.Services.Interfaces;
 
 namespace ZPassFit.Services.Implementations;

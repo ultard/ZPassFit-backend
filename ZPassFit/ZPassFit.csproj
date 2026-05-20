@@ -40,9 +40,4 @@
         </Content>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Data\Dev\" />
-      <Folder Include="Data\Production\" />
-    </ItemGroup>
-
 </Project>

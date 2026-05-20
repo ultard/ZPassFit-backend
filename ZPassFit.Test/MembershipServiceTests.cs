@@ -6,7 +6,7 @@ using ZPassFit.Data.Models.Memberships;
 using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Memberships;
 using ZPassFit.Dto;
-using ZPassFit.Payments;
+using ZPassFit.Options.Payments;
 using ZPassFit.Services.Implementations;
 
 namespace ZPassFit.Test;
@@ -118,16 +118,39 @@ public class MembershipServiceTests
         membershipPlanRepositoryMock.VerifyAll();
     }
 
-    [Fact]
-    public async Task BuyMembership_DisabledMethod_Throws()
+    [Theory]
+    [AutoMoqData]
+    public async Task BuyMembership_DisabledMethod_Throws(
+        [Frozen] IClientRepository clientRepo,
+        [Frozen] IMembershipPlanRepository planRepo,
+        [Frozen] IMembershipRepository membershipRepo,
+        [Frozen] IPaymentRepository paymentRepo,
+        Mock<IOptions<PaymentMethodsOptions>> paymentMethodsOptionsMock
+    )
     {
-        var clientRepo = new Mock<IClientRepository>();
-        var planRepo = new Mock<IMembershipPlanRepository>();
-        var membershipRepo = new Mock<IMembershipRepository>();
-        var paymentRepo = new Mock<IPaymentRepository>();
+        paymentMethodsOptionsMock
+            .Setup(o => o.Value)
+            .Returns(
+                new PaymentMethodsOptions
+                {
+                    CashEnabled = false,
+                    CardEnabled = true,
+                    BalanceEnabled = true
+                }
+            );
+
+        var membershipService = new MembershipService(
+            clientRepo,
+            planRepo,
+            membershipRepo,
+            paymentRepo,
+            paymentMethodsOptionsMock.Object);
 
         var userId = "u1";
         var planId = Guid.NewGuid();
+        var clientRepositoryMock = Mock.Get(clientRepo);
+        var membershipPlanRepositoryMock = Mock.Get(planRepo);
+
         var client = new Client
         {
             Id = Guid.NewGuid(),
@@ -150,26 +173,15 @@ public class MembershipServiceTests
             Price = 1500
         };
 
-        clientRepo.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
-        planRepo.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync(plan);
-
-        var svc = new MembershipService(
-            clientRepo.Object,
-            planRepo.Object,
-            membershipRepo.Object,
-            paymentRepo.Object,
-            Options.Create(
-                new PaymentMethodsOptions
-                {
-                    CashEnabled = false,
-                    CardEnabled = true,
-                    BalanceEnabled = true
-                }));
+        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
+        membershipPlanRepositoryMock.Setup(r => r.GetByIdAsync(planId)).ReturnsAsync(plan);
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            svc.BuyMembershipAsync(userId, new BuyMembershipRequest(planId, 30, PaymentMethod.Cash)));
+            membershipService.BuyMembershipAsync(userId, new BuyMembershipRequest(planId, 30, PaymentMethod.Cash)));
 
         Assert.Equal("This payment method is disabled.", exception.Message);
+        clientRepositoryMock.VerifyAll();
+        membershipPlanRepositoryMock.VerifyAll();
     }
 
     [Theory]

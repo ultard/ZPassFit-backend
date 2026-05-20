@@ -4,24 +4,15 @@ using ZPassFit.Data.Models;
 
 namespace ZPassFit.Middleware;
 
-/// <summary>
-///     Ключ элемента <see cref="Microsoft.AspNetCore.Http.HttpContext.Items" /> с загруженным пользователем Identity.
-/// </summary>
 public static class CurrentUserHttpContextExtensions
 {
     public const string ApplicationUserKey = "__ZPassFit_ApplicationUser";
 
-    /// <summary>
-    ///     Пользователь, загруженный <see cref="CurrentUserMiddleware" /> после успешной аутентификации.
-    /// </summary>
     public static ApplicationUser? GetCurrentApplicationUser(this HttpContext httpContext)
     {
         return httpContext.Items.TryGetValue(ApplicationUserKey, out var value) ? value as ApplicationUser : null;
     }
 
-    /// <summary>
-    ///     Текущий пользователь для эндпоинтов с <see cref="AuthorizeAttribute" />; после middleware не null.
-    /// </summary>
     public static ApplicationUser GetRequiredCurrentApplicationUser(this HttpContext httpContext)
     {
         return httpContext.GetCurrentApplicationUser()
@@ -30,10 +21,6 @@ public static class CurrentUserHttpContextExtensions
     }
 }
 
-/// <summary>
-///     После JWT-аутентификации подгружает <see cref="ApplicationUser" /> в контекст запроса.
-///     Для эндпоинтов, требующих авторизацию, при отсутствии пользователя в БД отвечает 401.
-/// </summary>
 public sealed class CurrentUserMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(HttpContext context, UserManager<ApplicationUser> userManager)

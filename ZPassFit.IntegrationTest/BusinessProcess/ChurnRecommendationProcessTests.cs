@@ -2,15 +2,13 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using ZPassFit.Data;
 using ZPassFit.Data.Models.Memberships;
 using ZPassFit.Dto;
 using ZPassFit.IntegrationTest.Infrastructure;
 
 namespace ZPassFit.IntegrationTest.BusinessProcess;
 
-/// <summary>
-/// БП 3: Анализ и рекомендация (прогноз оттока через ИИ-модуль).
-/// </summary>
 [Collection(IntegrationTestCollection.Name)]
 public sealed class ChurnRecommendationProcessTests(PostgresFixture fixture)
 {
@@ -29,7 +27,7 @@ public sealed class ChurnRecommendationProcessTests(PostgresFixture fixture)
         );
         clientsResponse.EnsureSuccessStatusCode();
         var clients =
-            await clientsResponse.Content.ReadFromJsonAsync<PagedClientsResponse>(cancellationToken: ct);
+            await clientsResponse.Content.ReadFromJsonAsync<PagedClientsResponse>(ct);
         Assert.NotNull(clients);
         var client = Assert.Single(clients.Items);
 
@@ -49,10 +47,10 @@ public sealed class ChurnRecommendationProcessTests(PostgresFixture fixture)
         Assert.Equal(HttpStatusCode.OK, predictResponse.StatusCode);
 
         var prediction =
-            await predictResponse.Content.ReadFromJsonAsync<ChurnPredictionResponse>(cancellationToken: ct);
+            await predictResponse.Content.ReadFromJsonAsync<ChurnPredictionResponse>(ct);
         Assert.NotNull(prediction);
         Assert.Equal(0, prediction.Prediction);
-        Assert.Equal(StubPredictionService.StubProbability, prediction.Probability, precision: 5);
+        Assert.Equal(StubPredictionService.StubProbability, prediction.Probability, 5);
     }
 
     [Fact]
@@ -68,7 +66,7 @@ public sealed class ChurnRecommendationProcessTests(PostgresFixture fixture)
         );
         clientsResponse.EnsureSuccessStatusCode();
         var clients =
-            await clientsResponse.Content.ReadFromJsonAsync<PagedClientsResponse>(cancellationToken: ct);
+            await clientsResponse.Content.ReadFromJsonAsync<PagedClientsResponse>(ct);
         Assert.NotNull(clients);
         var client = Assert.Single(clients.Items);
 
@@ -77,7 +75,7 @@ public sealed class ChurnRecommendationProcessTests(PostgresFixture fixture)
         {
             using (var scope = fixture.Factory.Services.CreateScope())
             {
-                var db = scope.ServiceProvider.GetRequiredService<ZPassFit.Data.ApplicationDbContext>();
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var membership = await db.Memberships.SingleOrDefaultAsync(m => m.ClientId == client.Id, ct);
                 if (membership is not null)
                 {
@@ -101,7 +99,7 @@ public sealed class ChurnRecommendationProcessTests(PostgresFixture fixture)
             if (removedMembership is not null)
             {
                 using var scope = fixture.Factory.Services.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<ZPassFit.Data.ApplicationDbContext>();
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var hasMembership = await db.Memberships.AnyAsync(
                     m => m.ClientId == removedMembership.ClientId,
                     ct

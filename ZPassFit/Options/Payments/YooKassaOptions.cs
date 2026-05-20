@@ -1,4 +1,4 @@
-namespace ZPassFit.Payments;
+namespace ZPassFit.Options.Payments;
 
 public class YooKassaOptions
 {
@@ -6,7 +6,7 @@ public class YooKassaOptions
 
     public string ShopId { get; set; } = "";
     public string SecretKey { get; set; } = "";
-    
+
     public string BaseUrl { get; set; } = "https://api.yookassa.ru/v3";
     public string ReturnUrl { get; set; } = "";
 }

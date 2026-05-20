@@ -1,4 +1,4 @@
-using ZPassFit.Dashboard;
+using ZPassFit.Options.Dashboard;
 
 namespace ZPassFit.Test;
 
