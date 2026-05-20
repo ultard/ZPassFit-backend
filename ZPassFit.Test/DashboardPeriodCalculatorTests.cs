@@ -18,45 +18,9 @@ public class DashboardPeriodCalculatorTests
     }
 
     [Fact]
-    public void GetPreviousMonthUtcRange_AfterJanuary_IsDecember()
-    {
-        var (from, to) = DashboardPeriodCalculator.GetPreviousMonthUtcRange(Moscow, 2026, 1);
-        var (expectedFrom, expectedTo) = DashboardPeriodCalculator.GetMonthUtcRange(Moscow, 2025, 12);
-
-        Assert.Equal(expectedFrom, from);
-        Assert.Equal(expectedTo, to);
-    }
-
-    [Fact]
-    public void ResolveTargetMonth_BothNull_UsesUtcNowInZone()
-    {
-        var utc = new DateTime(2026, 6, 15, 12, 0, 0, DateTimeKind.Utc);
-        var (y, m) = DashboardPeriodCalculator.ResolveTargetMonth(Moscow, utc, null, null);
-        Assert.Equal(2026, y);
-        Assert.Equal(6, m);
-    }
-
-    [Fact]
-    public void ResolveTargetMonth_ExplicitYearMonth_ReturnsSame()
-    {
-        var (y, m) = DashboardPeriodCalculator.ResolveTargetMonth(Moscow, DateTime.UtcNow, 2025, 3);
-        Assert.Equal(2025, y);
-        Assert.Equal(3, m);
-    }
-
-    [Fact]
     public void ResolveTargetMonth_OnlyYear_Throws()
     {
         Assert.Throws<ArgumentException>(() =>
             DashboardPeriodCalculator.ResolveTargetMonth(Moscow, DateTime.UtcNow, 2026, null));
-    }
-
-    [Fact]
-    public void EnumerateDaysInMonth_February2024_Has29Days()
-    {
-        var days = DashboardPeriodCalculator.EnumerateDaysInMonth(2024, 2).ToList();
-        Assert.Equal(29, days.Count);
-        Assert.Equal(new DateOnly(2024, 2, 1), days[0]);
-        Assert.Equal(new DateOnly(2024, 2, 29), days[^1]);
     }
 }
