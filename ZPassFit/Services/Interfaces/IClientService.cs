@@ -7,6 +7,8 @@ public interface IClientService
     Task<ClientResponse?> GetMeAsync(string userId);
     Task<MyClientLevelResponse?> GetMyActiveLevelAsync(string userId);
     Task<ClientResponse?> GetByIdAsync(Guid id);
+    Task EnsureEntryLevelAsync(Guid clientId, CancellationToken cancellationToken = default);
+
     Task<bool> ApproveAsync(Guid clientId);
     Task<bool> BlockAsync(Guid clientId, CancellationToken cancellationToken = default);
     Task<bool> UnblockAsync(Guid clientId);

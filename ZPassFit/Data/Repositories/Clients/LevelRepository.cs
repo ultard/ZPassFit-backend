@@ -32,6 +32,15 @@ public class LevelRepository(ApplicationDbContext context) : ILevelRepository
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<Level?> GetEntryLevelAsync(CancellationToken cancellationToken = default)
+    {
+        return await context.Levels
+            .AsNoTracking()
+            .Where(l => l.PreviousLevelId == null)
+            .OrderBy(l => l.ActivateDays)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task AddAsync(Level level)
     {
         await context.Levels.AddAsync(level);

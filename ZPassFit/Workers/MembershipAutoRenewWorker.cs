@@ -5,10 +5,6 @@ using ZPassFit.Data.Models.Memberships;
 
 namespace ZPassFit.Workers;
 
-/// <summary>
-///     Автоматически продлевает абонементы, списывая деньги с баланса клиента.
-///     После вызова /Membership/cancel автопродление выключается (период остаётся действительным до ExpireDate).
-/// </summary>
 public class MembershipAutoRenewWorker(
     IServiceScopeFactory scopeFactory,
     IOptions<MembershipAutoRenewWorkerOptions> options,

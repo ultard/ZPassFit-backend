@@ -47,9 +47,13 @@ public class ClientLevelRepository(ApplicationDbContext context) : IClientLevelR
         var sql =
             """
             WITH last_visits AS (
-                SELECT v."ClientId", MAX(v."EnterDate") AS "LastEnterDate"
-                FROM "VisitLogs" AS v
-                GROUP BY v."ClientId"
+                SELECT cl."ClientId", MAX(v."EnterDate") AS "LastEnterDate"
+                FROM "ClientLevels" AS cl
+                LEFT JOIN "VisitLogs" AS v
+                    ON v."ClientId" = cl."ClientId"
+                   AND v."EnterDate" >= cl."ReceiveDate"
+                WHERE cl."RevocationDate" IS NULL
+                GROUP BY cl."ClientId"
             ),
             expired AS (
                 SELECT cl."Id", l."PreviousLevelId" AS "PrevLevelId"
@@ -60,11 +64,11 @@ public class ClientLevelRepository(ApplicationDbContext context) : IClientLevelR
                   AND l."GraceDays" > 0
                   AND l."PreviousLevelId" IS NOT NULL
                   AND COALESCE(lv."LastEnterDate", cl."ReceiveDate")
-                        < (now() AT TIME ZONE 'utc') - (l."GraceDays" * INTERVAL '1 day')
+                        < NOW() - (l."GraceDays" * INTERVAL '1 day')
             )
             UPDATE "ClientLevels" AS cl
             SET "LevelId" = e."PrevLevelId",
-                "ReceiveDate" = (now() AT TIME ZONE 'utc'),
+                "ReceiveDate" = NOW(),
                 "RevocationDate" = NULL
             FROM expired AS e
             WHERE cl."Id" = e."Id";

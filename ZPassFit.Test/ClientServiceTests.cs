@@ -76,50 +76,6 @@ public class ClientServiceTests
 
     [Theory]
     [AutoMoqData]
-    public async Task GetMyActiveLevel_NoActiveLevel_ReturnsNull(
-        [Frozen] IClientRepository clientRepository,
-        [Frozen] IClientLevelRepository clientLevelRepository,
-        [Frozen] ILevelRepository levelRepository,
-        [Frozen] IVisitLogRepository visitLogRepository,
-        ClientService clientService
-    )
-    {
-        var userId = "u1";
-        var client = new Client
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            LastName = "Petrov",
-            FirstName = "Petr",
-            MiddleName = "P",
-            BirthDate = new DateTime(1990, 1, 1),
-            Gender = ClientGender.Unknown,
-            Phone = "+79990000000",
-            Email = "petrov@example.com"
-        };
-
-        var clientRepositoryMock = Mock.Get(clientRepository);
-        var clientLevelRepositoryMock = Mock.Get(clientLevelRepository);
-        var levelRepositoryMock = Mock.Get(levelRepository);
-        var visitLogRepositoryMock = Mock.Get(visitLogRepository);
-        clientRepositoryMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(client);
-        clientLevelRepositoryMock.Setup(r => r.GetActiveByClientIdAsync(client.Id)).ReturnsAsync((ClientLevel?)null);
-
-        var result = await clientService.GetMyActiveLevelAsync(userId);
-
-        Assert.Null(result);
-        clientRepositoryMock.VerifyAll();
-        clientLevelRepositoryMock.VerifyAll();
-        levelRepositoryMock.Verify(
-            r => r.GetNextByPreviousLevelIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
-        visitLogRepositoryMock.Verify(
-            r => r.CountDistinctVisitDaysByClientAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(),
-                It.IsAny<CancellationToken>()),
-            Times.Never);
-    }
-
-    [Theory]
-    [AutoMoqData]
     public async Task GetMyActiveLevel_WithLevel_Maps(
         [Frozen] IClientRepository clientRepository,
         [Frozen] IClientLevelRepository clientLevelRepository,

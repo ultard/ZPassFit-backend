@@ -3,9 +3,6 @@ using ZPassFit.Data.Repositories.Clients;
 
 namespace ZPassFit.Workers;
 
-/// <summary>
-///     Периодически проверяет уровни клиентов и сбрасывает те, у кого истёк GraceDays с последнего посещения.
-/// </summary>
 public class ExpiredGraceLevelsWorker(
     IServiceScopeFactory scopeFactory,
     IOptions<ExpiredGraceLevelsWorkerOptions> options,

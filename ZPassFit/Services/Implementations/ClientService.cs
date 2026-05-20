@@ -54,11 +54,28 @@ public class ClientService(
         return client == null ? null : Map(client);
     }
 
+    public async Task EnsureEntryLevelAsync(Guid clientId, CancellationToken cancellationToken = default)
+    {
+        var existing = await clientLevelRepository.GetActiveByClientIdAsync(clientId);
+        if (existing != null) return;
+
+        var entryLevel = await levelRepository.GetEntryLevelAsync(cancellationToken);
+        if (entryLevel == null)
+            throw new InvalidOperationException("Entry loyalty level is not configured.");
+
+        await clientLevelRepository.AddAsync(new ClientLevel
+        {
+            ClientId = clientId,
+            LevelId = entryLevel.Id
+        });
+    }
+
     public async Task<bool> ApproveAsync(Guid clientId)
     {
         var client = await clientRepository.GetByIdAsync(clientId);
         if (client == null) return false;
 
+        await EnsureEntryLevelAsync(clientId);
         client.Status = ClientStatus.Active;
         await clientRepository.UpdateAsync(client);
         return true;
