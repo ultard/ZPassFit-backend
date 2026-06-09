@@ -125,8 +125,7 @@ public sealed class AuditSaveChangesInterceptor(IHttpContextAccessor httpContext
 
     private static string FormatEntityType(EntityEntry entry)
     {
-        var full = entry.Metadata.ClrType.FullName ?? entry.Metadata.Name;
-        return Truncate(full, 256);
+        return Truncate(entry.Metadata.ClrType.Name, 256);
     }
 
     private static string? FormatEntityKey(EntityEntry entry)
