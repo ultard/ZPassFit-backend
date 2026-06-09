@@ -59,27 +59,27 @@ public class DashboardService(IOptions<DashboardOptions> dashboardOptions, IServ
 
         var kpis = new[]
         {
-            BuildKpi("visits", "Визиты", kpiData.VisitsSelectedMonth, kpiData.VisitsPreviousMonth, "visits"),
+            BuildKpi("visits", "Посещения", kpiData.VisitsSelectedMonth, kpiData.VisitsPreviousMonth, ""),
             BuildKpi(
                 "revenue",
                 "Выручка",
                 kpiData.PaymentsSelectedMonth.TotalAmount,
                 kpiData.PaymentsPreviousMonth.TotalAmount,
-                "currency"
+                "₽"
             ),
             BuildKpi(
                 "newClients",
                 "Новые клиенты",
                 kpiData.NewClientsSelectedMonth,
                 kpiData.NewClientsPreviousMonth,
-                "count"
+                ""
             ),
             BuildKpi(
                 "newMemberships",
                 "Новые абонементы",
                 kpiData.MembershipActivationsSelectedMonth,
                 kpiData.MembershipActivationsPreviousMonth,
-                "count"
+                ""
             )
         };
 
