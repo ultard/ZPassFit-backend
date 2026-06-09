@@ -68,6 +68,32 @@ public class BonusTransactionRepository(ApplicationDbContext context) : IBonusTr
             .ToListAsync();
     }
 
+    public async Task<IReadOnlyList<ClubDayRevenueRow>> GetAccrualAmountsByClubDayForClientAsync(
+        Guid clientId,
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        string timeZoneId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var accrual = (int)BonusTransactionType.Accrual;
+        return await context.Database
+            .SqlQuery<ClubDayRevenueRow>(
+                $"""
+                 SELECT date(timezone({timeZoneId}::text, t."CreateDate")) AS "Date",
+                        SUM(t."Amount")::bigint AS "TotalAmount"
+                 FROM "BonusTransactions" AS t
+                 WHERE t."ClientId" = {clientId}
+                   AND t."Type" = {accrual}
+                   AND t."CreateDate" >= {fromUtcInclusive}
+                   AND t."CreateDate" < {toUtcExclusive}
+                 GROUP BY 1
+                 ORDER BY 1
+                 """
+            )
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(BonusTransaction transaction)
     {
         await context.BonusTransactions.AddAsync(transaction);

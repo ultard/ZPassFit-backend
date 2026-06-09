@@ -23,4 +23,12 @@ public interface IPaymentRepository
         string timeZoneId,
         CancellationToken cancellationToken = default
     );
+
+    Task<IReadOnlyList<ClubDayRevenueRow>> GetCompletedPaymentAmountsByClubDayForClientAsync(
+        Guid clientId,
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        string timeZoneId,
+        CancellationToken cancellationToken = default
+    );
 }

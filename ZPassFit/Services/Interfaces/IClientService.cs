@@ -27,5 +27,8 @@ public interface IClientService
     Task<ClientResponse?> CreditBalanceAsync(Guid clientId, int amount);
 
     /// <returns>null, если клиент не найден.</returns>
+    Task<ClientResponse?> SetBalanceAsync(Guid clientId, int balance);
+
+    /// <returns>null, если клиент не найден.</returns>
     Task<ClientResponse?> UpdateMyProfileAsync(string userId, UpdateClientProfileRequest request);
 }

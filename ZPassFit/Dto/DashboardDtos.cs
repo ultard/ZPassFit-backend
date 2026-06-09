@@ -40,3 +40,22 @@ public record DashboardDayPoint(DateOnly Date, int Value);
 public record DashboardRevenueDayPoint(DateOnly Date, long Amount);
 
 public record DashboardMembershipPlanPoint(Guid PlanId, string PlanName, int Count, decimal SharePercent);
+
+public record ClientStatsResponse(
+    DashboardPeriodMeta Period,
+    ClientStatsSummary Summary,
+    ClientStatsSeries Series
+);
+
+public record ClientStatsSummary(
+    int Visits,
+    int VisitDays,
+    long PaymentsAmount,
+    int BonusAccrued
+);
+
+public record ClientStatsSeries(
+    IReadOnlyList<DashboardDayPoint> VisitsByDay,
+    IReadOnlyList<DashboardRevenueDayPoint> PaymentsByDay,
+    IReadOnlyList<DashboardRevenueDayPoint> BonusAccrualsByDay
+);

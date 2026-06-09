@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using ZPassFit.Data.Repositories;
 using ZPassFit.Data.Repositories.Attendance;
 using ZPassFit.Data.Repositories.Clients;
+using ZPassFit.Data.Repositories.Clients;
 using ZPassFit.Data.Repositories.Memberships;
 using ZPassFit.Dto;
 using ZPassFit.Options.Dashboard;
@@ -133,6 +134,126 @@ public class DashboardService(IOptions<DashboardOptions> dashboardOptions, IServ
         );
 
         return new DashboardOverviewResponse(periodMeta, kpis, series);
+    }
+
+    public async Task<ClientStatsResponse?> GetClientStatsAsync(
+        Guid clientId,
+        int? year,
+        int? month,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var options = dashboardOptions.Value;
+        var clubTimeZone = DashboardPeriodCalculator.ResolveTimeZone(options.TimeZoneId);
+        var utcNow = DateTime.UtcNow;
+
+        var client = await RunInScopeAsync(
+            scopeFactory,
+            sp => sp.GetRequiredService<IClientRepository>().GetByIdAsync(clientId),
+            cancellationToken
+        );
+        if (client == null)
+            return null;
+
+        var (selectedYear, selectedMonth) = DashboardPeriodCalculator.ResolveTargetMonth(
+            clubTimeZone,
+            utcNow,
+            year,
+            month
+        );
+
+        var (selectedMonthStartUtc, selectedMonthEndUtcExclusive) =
+            DashboardPeriodCalculator.GetMonthUtcRange(clubTimeZone, selectedYear, selectedMonth);
+
+        var visitCountsTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IVisitLogRepository>()
+                    .GetVisitCountsByClubDayForClientAsync(
+                        clientId,
+                        selectedMonthStartUtc,
+                        selectedMonthEndUtcExclusive,
+                        options.TimeZoneId,
+                        cancellationToken
+                    ),
+            cancellationToken
+        );
+        var paymentAmountsTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IPaymentRepository>()
+                    .GetCompletedPaymentAmountsByClubDayForClientAsync(
+                        clientId,
+                        selectedMonthStartUtc,
+                        selectedMonthEndUtcExclusive,
+                        options.TimeZoneId,
+                        cancellationToken
+                    ),
+            cancellationToken
+        );
+        var bonusAccrualsTask = RunInScopeAsync(
+            scopeFactory,
+            sp =>
+                sp.GetRequiredService<IBonusTransactionRepository>()
+                    .GetAccrualAmountsByClubDayForClientAsync(
+                        clientId,
+                        selectedMonthStartUtc,
+                        selectedMonthEndUtcExclusive,
+                        options.TimeZoneId,
+                        cancellationToken
+                    ),
+            cancellationToken
+        );
+
+        await Task.WhenAll(visitCountsTask, paymentAmountsTask, bonusAccrualsTask);
+
+        var visitCountsByDay = (await visitCountsTask).ToDictionary(row => row.Date, row => row.Count);
+        var paymentAmountsByDay = (await paymentAmountsTask).ToDictionary(
+            row => row.Date,
+            row => row.TotalAmount
+        );
+        var bonusAccrualsByDay = (await bonusAccrualsTask).ToDictionary(
+            row => row.Date,
+            row => row.TotalAmount
+        );
+
+        var visitsByDay = BuildDailyCountSeries(selectedYear, selectedMonth, visitCountsByDay);
+        var paymentsByDay = BuildDailyRevenueSeries(selectedYear, selectedMonth, paymentAmountsByDay);
+        var bonusAccrualsByDaySeries = BuildDailyRevenueSeries(
+            selectedYear,
+            selectedMonth,
+            bonusAccrualsByDay
+        );
+
+        var summary = new ClientStatsSummary(
+            visitsByDay.Sum(p => p.Value),
+            visitsByDay.Count(p => p.Value > 0),
+            paymentsByDay.Sum(p => p.Amount),
+            (int)Math.Min(int.MaxValue, bonusAccrualsByDaySeries.Sum(p => p.Amount))
+        );
+
+        var russianCulture = CultureInfo.GetCultureInfo("ru-RU");
+        var monthNameTitleCase = russianCulture.TextInfo.ToTitleCase(
+            russianCulture.DateTimeFormat.GetMonthName(selectedMonth)
+        );
+        var periodLabel = $"{monthNameTitleCase} {selectedYear}";
+
+        var periodMeta = new DashboardPeriodMeta(
+            options.TimeZoneId,
+            selectedYear,
+            selectedMonth,
+            periodLabel,
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive,
+            selectedMonthStartUtc,
+            selectedMonthEndUtcExclusive
+        );
+
+        return new ClientStatsResponse(
+            periodMeta,
+            summary,
+            new ClientStatsSeries(visitsByDay, paymentsByDay, bonusAccrualsByDaySeries)
+        );
     }
 
     private async Task<DashboardKpiData> LoadKpiDataAsync(

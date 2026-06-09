@@ -26,6 +26,14 @@ public interface IVisitLogRepository
         CancellationToken cancellationToken = default
     );
 
+    Task<IReadOnlyList<ClubDayCountRow>> GetVisitCountsByClubDayForClientAsync(
+        Guid clientId,
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        string timeZoneId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<(IReadOnlyList<VisitLog> Items, int TotalCount)> GetPagedAsync(
         DateTime? enterFromUtc,
         DateTime? enterToUtc,

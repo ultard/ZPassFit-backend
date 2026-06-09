@@ -9,4 +9,11 @@ public interface IDashboardService
         int? month,
         CancellationToken cancellationToken = default
     );
+
+    Task<ClientStatsResponse?> GetClientStatsAsync(
+        Guid clientId,
+        int? year,
+        int? month,
+        CancellationToken cancellationToken = default
+    );
 }

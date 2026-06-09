@@ -92,4 +92,30 @@ public class PaymentRepository(ApplicationDbContext context) : IPaymentRepositor
             )
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<ClubDayRevenueRow>> GetCompletedPaymentAmountsByClubDayForClientAsync(
+        Guid clientId,
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        string timeZoneId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var completed = (int)PaymentStatus.Completed;
+        return await context.Database
+            .SqlQuery<ClubDayRevenueRow>(
+                $"""
+                 SELECT date(timezone({timeZoneId}::text, COALESCE(p."PaymentDate", p."CreateDate"))) AS "Date",
+                        SUM(p."Amount")::bigint AS "TotalAmount"
+                 FROM "Payments" AS p
+                 WHERE p."ClientId" = {clientId}
+                   AND p."Status" = {completed}
+                   AND COALESCE(p."PaymentDate", p."CreateDate") >= {fromUtcInclusive}
+                   AND COALESCE(p."PaymentDate", p."CreateDate") < {toUtcExclusive}
+                 GROUP BY 1
+                 ORDER BY 1
+                 """
+            )
+            .ToListAsync(cancellationToken);
+    }
 }

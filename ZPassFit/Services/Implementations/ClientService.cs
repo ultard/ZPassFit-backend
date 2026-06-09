@@ -137,6 +137,19 @@ public class ClientService(
         return Map(client);
     }
 
+    public async Task<ClientResponse?> SetBalanceAsync(Guid clientId, int balance)
+    {
+        if (balance < 0)
+            throw new InvalidOperationException("Balance cannot be negative.");
+
+        var client = await clientRepository.GetByIdAsync(clientId);
+        if (client == null) return null;
+
+        client.Balance = balance;
+        await clientRepository.UpdateAsync(client);
+        return Map(client);
+    }
+
     public async Task<ClientResponse?> UpdateMyProfileAsync(string userId, UpdateClientProfileRequest request)
     {
         var client = await clientRepository.GetByUserIdAsync(userId);

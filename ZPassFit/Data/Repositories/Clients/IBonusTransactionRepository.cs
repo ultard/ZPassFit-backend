@@ -20,4 +20,12 @@ public interface IBonusTransactionRepository
     Task AddAsync(BonusTransaction transaction);
     Task UpdateAsync(BonusTransaction transaction);
     Task DeleteAsync(Guid id);
+
+    Task<IReadOnlyList<ClubDayRevenueRow>> GetAccrualAmountsByClubDayForClientAsync(
+        Guid clientId,
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        string timeZoneId,
+        CancellationToken cancellationToken = default
+    );
 }

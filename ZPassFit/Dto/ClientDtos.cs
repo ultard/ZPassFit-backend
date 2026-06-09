@@ -23,6 +23,10 @@ public record CreditClientBalanceRequest(
     [Range(1, int.MaxValue)] int Amount
 );
 
+public record SetClientBalanceRequest(
+    [Range(0, int.MaxValue)] int Balance
+);
+
 public record UpdateClientProfileRequest(
     [MaxLength(100)] [MinLength(1)] string LastName,
     [MaxLength(100)] [MinLength(1)] string FirstName,

@@ -182,4 +182,48 @@ public class ClientServiceTests
         Assert.Equal(1500, result.Balance);
         clientRepo.Verify(r => r.UpdateAsync(It.IsAny<Client>()), Times.Once);
     }
+
+    [Fact]
+    public async Task SetBalance_SetsAbsoluteValue_ReturnsUpdated()
+    {
+        var clientRepo = new Mock<IClientRepository>();
+        var clientLevelRepo = new Mock<IClientLevelRepository>();
+        var levelRepo = new Mock<ILevelRepository>();
+        var visitRepo = new Mock<IVisitLogRepository>();
+        var jwt = new Mock<IJwtTokenService>();
+
+        var id = Guid.NewGuid();
+        var client = new Client
+        {
+            Id = id,
+            UserId = "u",
+            LastName = "A",
+            FirstName = "B",
+            MiddleName = "C",
+            BirthDate = new DateTime(1990, 1, 1),
+            Gender = ClientGender.Unknown,
+            Phone = "+70000000000",
+            Email = "a@b.c",
+            Balance = 500,
+            Bonuses = 0
+        };
+
+        clientRepo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(client);
+        clientRepo
+            .Setup(r => r.UpdateAsync(It.Is<Client>(c => c.Id == id && c.Balance == 200)))
+            .Returns(Task.CompletedTask);
+
+        var svc = new ClientService(
+            clientRepo.Object,
+            clientLevelRepo.Object,
+            levelRepo.Object,
+            visitRepo.Object,
+            jwt.Object);
+
+        var result = await svc.SetBalanceAsync(id, 200);
+
+        Assert.NotNull(result);
+        Assert.Equal(200, result.Balance);
+        clientRepo.Verify(r => r.UpdateAsync(It.IsAny<Client>()), Times.Once);
+    }
 }

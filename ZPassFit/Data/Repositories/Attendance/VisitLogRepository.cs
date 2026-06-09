@@ -82,6 +82,28 @@ public class VisitLogRepository(ApplicationDbContext context) : IVisitLogReposit
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<ClubDayCountRow>> GetVisitCountsByClubDayForClientAsync(
+        Guid clientId,
+        DateTime fromUtcInclusive,
+        DateTime toUtcExclusive,
+        string timeZoneId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await context.Database
+            .SqlQuery<ClubDayCountRow>(
+                $"""
+                 SELECT date(timezone({timeZoneId}::text, v."EnterDate")) AS "Date", COUNT(*)::int AS "Count"
+                 FROM "VisitLogs" AS v
+                 WHERE v."ClientId" = {clientId}
+                   AND v."EnterDate" >= {fromUtcInclusive} AND v."EnterDate" < {toUtcExclusive}
+                 GROUP BY 1
+                 ORDER BY 1
+                 """
+            )
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<VisitLog?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.VisitLogs

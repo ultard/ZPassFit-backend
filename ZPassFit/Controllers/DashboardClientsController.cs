@@ -10,7 +10,10 @@ namespace ZPassFit.Controllers;
 [ApiController]
 [Tags("Дашборд — клиенты")]
 [Route("dashboard/clients")]
-public class DashboardClientsController(IClientService clientService) : ControllerBase
+public class DashboardClientsController(
+    IClientService clientService,
+    IDashboardService dashboardService
+) : ControllerBase
 {
     private const int MinPage = 1;
     private const int MinPageSize = 1;
@@ -54,6 +57,32 @@ public class DashboardClientsController(IClientService clientService) : Controll
     {
         var client = await clientService.GetByIdAsync(id);
         return client == null ? Results.NotFound() : Results.Ok(client);
+    }
+
+    [HttpGet("{id:guid}/stats")]
+    [EndpointSummary("Статистика клиента")]
+    [EndpointDescription("Посещения, платежи и бонусы клиента за выбранный календарный месяц.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ClientStatsResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> Stats(
+        [FromRoute] Guid id,
+        [FromQuery] int? year,
+        [FromQuery] int? month,
+        CancellationToken cancellationToken = default
+    )
+    {
+        try
+        {
+            var stats = await dashboardService.GetClientStatsAsync(id, year, month, cancellationToken);
+            return stats == null ? Results.NotFound() : Results.Ok(stats);
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPost("{id:guid}/approve")]
@@ -108,6 +137,28 @@ public class DashboardClientsController(IClientService clientService) : Controll
         try
         {
             var client = await clientService.CreditBalanceAsync(id, request.Amount);
+            return client == null ? Results.NotFound() : Results.Ok(client);
+        }
+        catch (InvalidOperationException e)
+        {
+            return Results.BadRequest(new { error = e.Message });
+        }
+    }
+
+    [HttpPut("{id:guid}/balance")]
+    [Authorize(Roles = Roles.Admin)]
+    [EndpointSummary("Установить баланс")]
+    [EndpointDescription("Задаёт абсолютное значение баланса клиента. Только для администратора.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ClientResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IResult> SetBalance([FromRoute] Guid id, [FromBody] SetClientBalanceRequest request)
+    {
+        try
+        {
+            var client = await clientService.SetBalanceAsync(id, request.Balance);
             return client == null ? Results.NotFound() : Results.Ok(client);
         }
         catch (InvalidOperationException e)
